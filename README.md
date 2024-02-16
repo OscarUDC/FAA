@@ -60,6 +60,7 @@ graph TD
 | `config/` | files for the enviroment configuration |
 | `db/` | databases of train, test and validation |
 | `docs/` | documentation files |
+| `release/` | final code for delivery |
 | `src/` | source code |
 
 # External Libraries 👇
