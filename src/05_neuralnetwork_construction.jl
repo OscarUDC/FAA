@@ -1,7 +1,7 @@
 using Flux
 
 
-function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int;  
+function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int,  
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology))) 
     """
     Creates a neuronal network with the depth chosen, and with the number of neurons chosen
