@@ -38,6 +38,20 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
 
 end
 
+
+"""
+Creates and trains a neuronal network with the depth and the number of neurons chosen
+----------
+Attributes
+----------
+topology: number of neurones each layer has. 
+Inputs: inputs the neuronal network will recieve.
+targets: the outputs the ANN is supposed to return.
+transferFunctions: which transfer fuction each layer has.
+maxEpochs: maximum number of epoches (times the training bucle) can have the ANN
+minLoss: point where the ANN is fully "trained"
+learningRate: learning rate of the training fuction
+"""
 function trainClassANN(topology::AbstractArray{<:Int,1},
      dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}},
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
