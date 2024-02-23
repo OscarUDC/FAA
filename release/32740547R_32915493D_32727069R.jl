@@ -16,22 +16,27 @@ using Flux.Losses
 
 # Funcion para realizar la codificacion, recibe el vector de caracteristicas (uno por patron), y las clases
 function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1})
-    #
-    # Codigo a desarrollar
-    #
+    unique_classes = unique(classes)                                        # Nos devuelve un array con las clases que existen en el db
+    encoded_matrix = zeros(Int, length(feature), length(unique_classes))    # Inicializamos una matriz de ceros para almacenar la codificación one-hot
+
+    for i in 1:length(feature)                                              # Iteramos sobre cada patrón en el vector de características
+        class_index = findfirst(x -> x == classes[i], unique_classes)       # Encontramos el índice de la clase correspondiente en el array de clases únicas
+        encoded_matrix[i, class_index] = 1                                  # Marcamos la posición correspondiente a la clase con un 1 en la matriz one-hot
+    end
+
+    return encoded_matrix
 end;
 # Esta funcion es similar a la anterior, pero si no es especifican las clases, se toman de la propia variable
 function oneHotEncoding(feature::AbstractArray{<:Any,1})
-    #
-    # Codigo a desarrollar
-    #
+    classes = unique(feature)                                              # Obtenemos las clases únicas presentes en el vector de características
+    return oneHotEncoding(feature, classes)                                # Llamamos al método con la información de clases obtenida
+
 end;
 # Sobrecargamos la funcion oneHotEncoding por si acaso pasan un vector de valores booleanos
 #  En este caso, el propio vector ya está codificado, simplemente lo convertimos a una matriz columna
 function oneHotEncoding(feature::AbstractArray{Bool,1})
-    #
-    # Codigo a desarrollar
-    #
+    return hcat(feature)                                                   # Convertimos el vector booleano en una matriz columna
+
 end;
 # Cuando se llame a la funcion oneHotEncoding, según el tipo del argumento pasado, Julia realizará
 #  la llamada a la función correspondiente
@@ -42,14 +47,16 @@ end;
 
 # Para calcular los parametros de normalizacion, segun la forma de normalizar que se desee:
 function calculateMinMaxNormalizationParameters(dataset::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    mins = minimum(dataset, dims=1)
+    maxs = maximum(dataset, dims=1)
+    return (mins, maxs)
+
 end;
 function calculateZeroMeanNormalizationParameters(dataset::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    means = mean(dataset, dims=1)
+    stds = std(dataset, dims=1)
+    return (means, stds)
+
 end;
 
 # 4 versiones de la funcion para normalizar entre 0 y 1:
@@ -58,24 +65,26 @@ end;
 #  - Nos dan los parametros de normalizacion, y no se quiere modificar el array de entradas (se crea uno nuevo)
 #  - No nos dan los parametros de normalizacion, y no se quiere modificar el array de entradas (se crea uno nuevo)
 function normalizeMinMax!(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    #
-    # Codigo a desarrollar
-    #
+    mins, maxs = normalizationParameters
+    dataset .= (dataset .- mins) ./ (maxs .- mins)
+
 end;
 function normalizeMinMax!(dataset::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    mins = minimum(dataset, dims=1)
+    maxs = maximum(dataset, dims=1)
+    dataset .= (dataset .- mins) ./ (maxs .- mins)
+
 end;
 function normalizeMinMax( dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    #
-    # Codigo a desarrollar
-    #
+    mins, maxs = normalizationParameters
+    return (dataset .- mins) ./ (maxs .- mins)
+
 end;
 function normalizeMinMax( dataset::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    mins = minimum(dataset, dims=1)
+    maxs = maximum(dataset, dims=1)
+    return (dataset .- mins) ./ (maxs .- mins)
+
 end;
 
 # 4 versiones similares de la funcion para normalizar de media 0:
@@ -84,24 +93,28 @@ end;
 #  - Nos dan los parametros de normalizacion, y no se quiere modificar el array de entradas (se crea uno nuevo)
 #  - No nos dan los parametros de normalizacion, y no se quiere modificar el array de entradas (se crea uno nuevo)
 function normalizeZeroMean!(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    #
-    # Codigo a desarrollar
-    #
+    means, stds = normalizationParameters
+    dataset .-= means
+    dataset ./= stds
+
 end;
 function normalizeZeroMean!(dataset::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    means = mean(dataset, dims=1)
+    stds = std(dataset, dims=1)
+    dataset .-= means
+    dataset ./= stds
+
 end;
 function normalizeZeroMean( dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
-    #
-    # Codigo a desarrollar
-    #
+    means, stds = normalizationParameters
+    return (dataset .- means) ./ stds
+
 end;
 function normalizeZeroMean( dataset::AbstractArray{<:Real,2})
-    #
-    # Codigo a desarrollar
-    #
+    means = mean(dataset, dims=1)
+    stds = std(dataset, dims=1)
+    return (dataset .- means) ./ stds
+
 end;
 
 

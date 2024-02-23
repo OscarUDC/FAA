@@ -1,3 +1,10 @@
+using Statistics
+using Flux
+using Flux.Losses
+using FileIO;
+using DelimitedFiles;
+using Statistics;
+
 # Charge the modules
 include.([
     "01_oneHotEncoding.jl",
@@ -8,14 +15,45 @@ include.([
     "06_neuralnetwork_training.jl"
 ])
 
+# Código del main
+data = readdlm("db\\iris.data", ',')
 
-# Using the functions
-data = # Your dataset
-classes = # Your classes
+# Extracción de características y clases
+features = [row[1:4] for row in eachrow(data)]
+classes = data[:, end]
 
-# Example usage
-encoded_data = OneHotEncoding.oneHotEncoding(data, classes)
-normalized_data = Normalization.normalizeMinMax(encoded_data)
-outputs = NeuralNetworkConstruction.buildClassANN(...) |> NeuralNetworkTraining.trainClassANN(...)
+# Llamada a la función oneHotEncoding
+encoded_matrix = oneHotEncoding(features, classes)
 
-# Other operations and logic in your program
+# Imprimir la matriz codificada
+println("Matriz Codificada:")
+println(encoded_matrix)
+
+# Calcular parámetros para Min-Max Normalization
+min_max_params = calculateMinMaxNormalizationParameters(encoded_matrix)
+
+# Normalizar entre 0 y 1 (modificando el array original)
+normalizeMinMax!(encoded_matrix, min_max_params)
+println("\nMatriz Normalizada (0-1) con parámetros dados:")
+println(encoded_matrix)
+
+# Crear nueva matriz y normalizar entre 0 y 1 (sin modificar el array original)
+normalized_matrix_0_1 = normalizeMinMax(encoded_matrix, min_max_params)
+println("\nNueva Matriz Normalizada (0-1) con parámetros dados:")
+println(normalized_matrix_0_1)
+
+# Convertir la matriz a tipo Float64 antes de normalizar a media 0
+encoded_matrix = Float64(encoded_matrix)
+
+# Calcular parámetros para Zero Mean Normalization
+zero_mean_params = calculateZeroMeanNormalizationParameters(encoded_matrix)
+
+# Normalizar a media 0 (modificando el array original)
+normalizeZeroMean!(encoded_matrix, zero_mean_params)
+println("\nMatriz Normalizada con Media 0 con parámetros dados:")
+println(encoded_matrix)
+
+# Crear nueva matriz y normalizar a media 0 (sin modificar el array original)
+normalized_matrix_zero_mean = normalizeZeroMean(encoded_matrix, zero_mean_params)
+println("\nNueva Matriz Normalizada con Media 0 con parámetros dados:")
+println(normalized_matrix_zero_mean)
