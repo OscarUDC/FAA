@@ -26,7 +26,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     targetsT = transpose(targets);
     ann = buildClassANN(size(inputs, 1), topology, size(targets, 1), transferFunctions);
 
-    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets): Losses.crossEntropy(model(inputs), targets);
+    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets);
     opt_state = Flux.setup(Adam(learningRate), ann);
     for epoch in 0:1:maxEpochs
         Flux.train!(loss, ann, [(inputsT, targetsT)], opt_state);
@@ -65,7 +65,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     targetsT = transpose(targets);
     ann = buildClassANN(size(inputs, 1), topology, size(targets, 1), transferFunctions);
 
-    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets): Losses.crossEntropy(model(inputs), targets);
+    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets);
     opt_state = Flux.setup(Adam(learningRate), ann);
     for epoch in 0:1:maxEpochs
         Flux.train!(loss, ann, [(inputsT, targetsT)], opt_state);
