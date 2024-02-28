@@ -15,12 +15,12 @@ include.([
     "06_neuralnetwork_training.jl"
 ])
 
-# Código del main
+# Cargar datos desde un archivo CSV (o el formato que estés utilizando)
 data = readdlm("db\\iris.data", ',')
 
 # Extracción de características y clases
-features = [row[1:4] for row in eachrow(data)]
-classes = data[:, end]
+features = [row[end] for row in eachrow(data)]
+classes = unique(features)
 
 # Llamada a la función oneHotEncoding
 encoded_matrix = oneHotEncoding(features, classes)
@@ -43,7 +43,7 @@ println("\nNueva Matriz Normalizada (0-1) con parámetros dados:")
 println(normalized_matrix_0_1)
 
 # Convertir la matriz a tipo Float64 antes de normalizar a media 0
-encoded_matrix = Float64(encoded_matrix)
+encoded_matrix = Float32.(encoded_matrix)
 
 # Calcular parámetros para Zero Mean Normalization
 zero_mean_params = calculateZeroMeanNormalizationParameters(encoded_matrix)
