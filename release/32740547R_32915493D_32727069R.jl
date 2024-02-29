@@ -190,15 +190,15 @@ end;
 using Random
 
 function holdOut(N::Int, P::Real)
-    #
-    # Codigo a desarrollar
-    #
+    indexes = randperm(N)
+    split = Int64(round(N * P))
+    return tuple(indexes[1:split], indexes[split + 1:N])
 end;
 
 function holdOut(N::Int, Pval::Real, Ptest::Real)
-    #
-    # Codigo a desarrollar
-    #
+    indexes = holdOut(N, Pval + Ptest)
+    firstSplit, secondSplit = Int64(round(N * (Pval + Ptest))), Int64(round(N * (1 - Ptest)))
+    return tuple(indexes[1:firstSplit], [firstSplit + 1:secondSplit], [secondSplit + 1:N])
 end;
 
 
