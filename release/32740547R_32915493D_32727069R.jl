@@ -16,12 +16,17 @@ using Flux.Losses
 
 # Funcion para realizar la codificacion, recibe el vector de caracteristicas (uno por patron), y las clases
 function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1})
-    unique_classes = unique(classes)                                        # Nos devuelve un array con las clases que existen en el db
-    encoded_matrix = zeros(Int, length(feature), length(unique_classes))    # Inicializamos una matriz de ceros para almacenar la codificación one-hot
+    num_classes = length(classes)
+    num_patterns = length(feature)
 
-    for i in 1:length(feature)                                              # Iteramos sobre cada patrón en el vector de características
-        class_index = findfirst(x -> x == classes[i], unique_classes)       # Encontramos el índice de la clase correspondiente en el array de clases únicas
-        encoded_matrix[i, class_index] = 1                                  # Marcamos la posición correspondiente a la clase con un 1 en la matriz one-hot
+    if num_classes == 2
+        encoded_matrix = reshape(feature .== classes[1], :, 1)
+    else
+        encoded_matrix = falses(num_patterns, num_classes)
+
+        for i in 1:num_classes
+            encoded_matrix[:, i] .= feature .== classes[i]
+        end
     end
 
     return encoded_matrix
@@ -245,15 +250,46 @@ end;
 
 
 function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
-    #
-    # Codigo a desarrollar
-    #
+    TP = sum(outputs .& targets)
+    TN = sum((.!outputs) .& (.!targets))
+    FP = sum(outputs .& (.!targets))
+    FN = sum((.!outputs) .& targets)
+
+    precision = TP / (TP + FP)
+    error_rate = (FP + FN) / (TP + TN + FP + FN)
+    sensitivity = TP / (TP + FN)
+    specificity = TN / (TN + FP)
+    ppv = precision
+    npv = TN / (TN + FN)
+    f1_score = 2 * ((precision * sensitivity) / (precision + sensitivity))
+
+    confusion_matrix = [TP FN; FP TN]
+
+    return (precision, error_rate, sensitivity, specificity, ppv, npv, f1_score, confusion_matrix)
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Real,1}, targets::AbstractArray{Bool,1}; threshold::Real=0.5)
-    #
-    # Codigo a desarrollar
-    #
+    binary_outputs = outputs .≥ threshold
+    return confusionMatrix(binary_outputs, targets)
+end;
+
+function printConfusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
+    results = confusionMatrix(outputs, targets)
+    
+    println("Precision: ", results[1])
+    println("Error Rate: ", results[2])
+    println("Sensitivity: ", results[3])
+    println("Specificity: ", results[4])
+    println("PPV: ", results[5])
+    println("NPV: ", results[6])
+    println("F1-Score: ", results[7])
+    println("Confusion Matrix:")
+    println(results[8])
+end;
+
+function printConfusionMatrix(outputs::AbstractArray{<:Real,1}, targets::AbstractArray{Bool,1}; threshold::Real=0.5)
+    binary_outputs = outputs .≥ threshold
+    printConfusionMatrix(binary_outputs, targets)
 end;
 
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
