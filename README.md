@@ -48,6 +48,16 @@ graph TD
 ### VSCode
 - [VSCode Settings Documentation](https://code.visualstudio.com/docs/getstarted/settings#_settingsjson)
 
+### RNA
+
+<a href="https://grupo.us.es/gtocoma/pid/pid10/RedesNeuronales.htm"><img src="https://grupo.us.es/gtocoma/pid/pid10/RedesNeuronales_archivos/image041.jpg" width="300"></a>
+
+<a href="https://www.merkle.com/es/es/blog/prediccion-dato-redes-neuronales-artificiales"><img src="https://www.merkle.com/es/sites/es/files/inline-images/neurona_3.png" width="300"></a>
+
+<a href="https://jahazielponce.com/funciones-de-activacion-y-como-puedes-crear-la-tuya-usando-python-r-y-tensorflow/"><img src="https://jahazielponce.com/wp-content/uploads/sample-activation-functions-square.png" width="300"></a>
+
+
+
 # Contributors ✨
 
 <a href="https://github.com/OscarUDC/FAA/graphs/contributors">
