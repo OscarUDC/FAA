@@ -292,24 +292,98 @@ function printConfusionMatrix(outputs::AbstractArray{<:Real,1}, targets::Abstrac
     printConfusionMatrix(binary_outputs, targets)
 end;
 
+
+
+# Clasificación multiclase:
+
+
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
-    #
-    # Codigo a desarrollar
-    #
+    num_classes = size(outputs, 2)
+
+    if num_classes == 2
+        # Llamar a la función confusionMatrix de la práctica anterior si solo hay dos clases
+        return confusionMatrix(outputs[:, 1], targets[:, 1])
+    end
+
+    # Reservar memoria para los vectores de métricas
+    sensitivity = zeros(Float64, num_classes)
+    specificity = zeros(Float64, num_classes)
+    VPP = zeros(Float64, num_classes)
+    VPN = zeros(Float64, num_classes)
+    F1 = zeros(Float64, num_classes)
+
+    # Iterar sobre cada clase
+    for i in 1:num_classes
+        # Obtener las columnas correspondientes a la clase actual
+        class_outputs = outputs[:, i]
+        class_targets = targets[:, i]
+
+        # Calcular las métricas y asignar los resultados a los vectores correspondientes
+        sensitivity[i], specificity[i], VPP[i], VPN[i], F1[i] =
+            confusionMatrix(class_outputs, class_targets)
+    end
+
+    # Calcular la matriz de confusión
+    confusion_matrix = hcat([confusionMatrix(outputs[:, i], targets[:, j]) for i in 1:num_classes, j in 1:num_classes]...)
+
+    # Calcular las métricas macro o weighted según se haya especificado
+    if weighted
+        macro_avg = mean([sensitivity, specificity, VPP, VPN, F1], dims=2)
+        weights = sum(targets, dims=1) ./ sum(sum(targets))
+        weighted_avg = sum(macro_avg .* weights)
+        metrics = weighted_avg
+    else
+        metrics = mean([sensitivity, specificity, VPP, VPN, F1], dims=2)
+    end
+
+    # Calcular precisión y tasa de error
+    accuracy = accuracy(outputs, targets)
+    error_rate = 1.0 - accuracy
+
+    # Devolver los resultados en una tupla
+    return (accuracy, error_rate, sensitivity, specificity, VPP, VPN, F1, confusion_matrix)
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
-    #
-    # Codigo a desarrollar
-    #
+    bool_outputs = classifyOutputs(outputs)
+    return confusionMatrix(bool_outputs, targets, weighted=weighted)
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Any,1}, targets::AbstractArray{<:Any,1}; weighted::Bool=true)
-    #
-    # Codigo a desarrollar
-    #
+    classes = unique(vcat(outputs, targets))
+    encoded_outputs = oneHotEncoding(outputs, classes)
+    encoded_targets = oneHotEncoding(targets, classes)
+    return confusionMatrix(encoded_outputs, encoded_targets, weighted=weighted)
 end;
 
+# Función para imprimir la matriz de confusión
+function printConfusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
+    results = confusionMatrix(outputs, targets, weighted=weighted)
+    println("Matriz de Confusión:")
+    println(results[end])
+    println("Métricas:")
+    println("Precisión: ", results[1])
+    println("Tasa de Error: ", results[2])
+    println("Sensibilidad: ", results[3])
+    println("Especificidad: ", results[4])
+    println("VPP: ", results[5])
+    println("VPN: ", results[6])
+    println("F1: ", results[7])
+end;
+
+# Función para imprimir la matriz de confusión con entradas de tipo AbstractArray{<:Real,2}
+function printConfusionMatrix(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
+    bool_outputs = classifyOutputs(outputs)
+    printConfusionMatrix(bool_outputs, targets, weighted=weighted)
+end;
+
+# Función para imprimir la matriz de confusión con entradas de tipo AbstractArray{<:Any,1}
+function printConfusionMatrix(outputs::AbstractArray{<:Any,1}, targets::AbstractArray{<:Any,1}; weighted::Bool=true)
+    classes = unique(vcat(outputs, targets))
+    encoded_outputs = oneHotEncoding(outputs, classes)
+    encoded_targets = oneHotEncoding(targets, classes)
+    printConfusionMatrix(encoded_outputs, encoded_targets, weighted=weighted)
+end;
 
 
 # ----------------------------------------------------------------------------------------------
@@ -320,15 +394,22 @@ using Random
 using Random:seed!
 
 function crossvalidation(N::Int64, k::Int64)
-    #
-    # Codigo a desarrollar
-    #
+    if k > N
+        error("k cannot be greater than N")
+    end
+    subset = collect(1:k)
+    subsets = repeat(subset, outer = ceil(Int, N/k))
+    return shuffle!(subsets[1:N])
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
-    #
-    # Codigo a desarrollar
-    #
+    if k < 10
+        error("k is too low")
+    end
+    indexes = zeros(Int, length(targets))
+    indexes[targets] .= crossvalidation(sum(targets), k)
+    indexes[.!targets] .= crossvalidation(sum(.!targets), k)
+    return indexes
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,2}, k::Int64)
