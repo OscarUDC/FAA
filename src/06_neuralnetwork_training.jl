@@ -20,23 +20,22 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     maxEpochs::Int=1000, 
     minLoss::Real=0.0, 
     learningRate::Real=0.01)
+
+    newTargets = reshape(targets, :, size(targets));
     
+    trainClassANN(topology, Tuple{inputs, newTargets}, transferFunctions, maxEpochs, minLoss, learningRate);
+end;
 
-    inputsT = transpose(inputs);
-    targetsT = transpose(targets);
-    ann = buildClassANN(size(inputs, 1), topology, size(targets, 1), transferFunctions);
-
-    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets): Losses.crossEntropy(model(inputs), targets);
-    opt_state = Flux.setup(Adam(learningRate), ann);
-    for epoch in 0:1:maxEpochs
-        Flux.train!(loss, ann, [(inputsT, targetsT)], opt_state);
-        if loss(ann, inputsT, targetsT) <= minLoss
-            return ann;
-        end;
-        return ann;
-    end;
-
-end
+"""
+Creation of the loss function, please the matrix has to have arranged the patrons in colums
+----------
+Attributes
+----------
+model: model to calculate the loss
+inputs: the inputs you'll use to calculate the loss
+targets: the targets youll use to calculate the loss        
+"""
+loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targetsT);
 
 
 """
@@ -63,15 +62,14 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     targets = dataset[1]
     inputsT = transpose(inputs);
     targetsT = transpose(targets);
-    ann = buildClassANN(size(inputs, 1), topology, size(targets, 1), transferFunctions);
+    ann = buildClassANN(numInputs=size(inputs, 1), topology, numOutputs=size(targets, 1), transferFunctions);
 
-    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets): Losses.crossEntropy(model(inputs), targets);
     opt_state = Flux.setup(Adam(learningRate), ann);
     for epoch in 0:1:maxEpochs
         Flux.train!(loss, ann, [(inputsT, targetsT)], opt_state);
         if loss(ann, inputsT, targetsT) <= minLoss
             return ann;
         end;
-        return ann;
+    return ann;
     end;
 end;
