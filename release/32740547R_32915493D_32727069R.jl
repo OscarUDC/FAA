@@ -173,10 +173,10 @@ function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutp
     ann = Chain();                                                                                          #initializes the ANN
     ann = Chain(ann..., Dense(numInputs, topology[0],transferFunctions[0]));                                #first layer of the ANN
     number_before = 0;
-for number in 1:1:(length(topology) - 1)                                                                    #loop that will create
+    for number in 1:1:(length(topology) - 1)                                                                    #loop that will create
         ann = Chain(ann..., Dense(topology[number_before], topology[number],transferFunctions[number]));    #the other layers of the ANN
         number_before = number;
-    end
+    end;
     ann = Chain(ann..., Dense(topology[number_before], numOutputs, transferFunctions[number_before]));      #last layer of the ANN
     ann = Chain(ann..., softmax);                                                                           #the softmax function
     return ann;
