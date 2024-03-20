@@ -184,13 +184,17 @@ function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutp
     ann = Chain(ann..., softmax)                                                                            #the softmax function
     return ann
 end
+
 function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01) 
 
+    
     inputs = dataset[0]
     targets = dataset[1]
     inputsT = transpose(inputs)
     targetsT = transpose(targets)
+    
     ann = buildClassANN(numInputs=size(inputs, 1), topology, numOutputs=size(targets, 1), transferFunctions)
+    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targetsT)
 
     opt_state = Flux.setup(Adam(learningRate), ann)
     for epoch in 1:maxEpochs
