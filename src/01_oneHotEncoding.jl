@@ -1,3 +1,4 @@
+#2
 # Funciones para codificar entradas y salidas categóricas
 
 # Funcion para realizar la codificacion, recibe el vector de caracteristicas (uno por patron), y las clases

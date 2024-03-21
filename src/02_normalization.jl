@@ -1,3 +1,4 @@
+#2
 # Funciones para calcular los parametros de normalizacion y normalizar
 
 # Para calcular los parametros de normalizacion, segun la forma de normalizar que se desee:
