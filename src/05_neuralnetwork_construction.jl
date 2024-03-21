@@ -18,9 +18,9 @@ function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutp
     ann = Chain(ann..., Dense(numInputs, topology[1],transferFunctions[1]))                                 #first layer of the ANN
     number_before = 1
    
-    for number in 2:(length(topology) - 1)                                                                    #loop that will create
+    for number in 2: length(topology)                                                                    #loop that will create
         ann = Chain(ann..., Dense(topology[number_before], topology[number],transferFunctions[number]))     #the other layers of the ANN
-        number_before = number 
+        number_before = number
     end
     ann = Chain(ann..., Dense(topology[number_before], numOutputs, identity))                               #last layer of the ANN
     ann = Chain(ann..., softmax)                                                                            #the softmax function

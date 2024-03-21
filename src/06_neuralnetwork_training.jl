@@ -27,18 +27,6 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
 end
 
 """
-Creation of the loss function, please the matrix has to have arranged the patrons in colums
-----------
-Attributes
-----------
-model: model to calculate the loss
-inputs: the inputs you'll use to calculate the loss
-targets: the targets youll use to calculate the loss        
-"""
-loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targetsT)
-
-
-"""
 Creates and trains a neuronal network with the depth and the number of neurons chosen
 ----------
 Attributes
@@ -52,17 +40,19 @@ minLoss: point where the ANN is fully "trained"
 learningRate: learning rate of the training fuction
 """
 function trainClassANN(topology::AbstractArray{<:Int,1},
-     dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}},
+    dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}},
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
     maxEpochs::Int=1000,
     minLoss::Real=0.0,
     learningRate::Real=0.01)
-
+    
     inputs = dataset[0]
     targets = dataset[1]
     inputsT = transpose(inputs)
     targetsT = transpose(targets)
+    
     ann = buildClassANN(numInputs=size(inputs, 1), topology, numOutputs=size(targets, 1), transferFunctions)
+    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targetsT)
 
     opt_state = Flux.setup(Adam(learningRate), ann)
     for epoch in 1:maxEpochs
