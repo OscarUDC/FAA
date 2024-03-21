@@ -57,3 +57,7 @@ println(encoded_matrix)
 normalized_matrix_zero_mean = normalizeZeroMean(encoded_matrix, zero_mean_params)
 println("\nNueva Matriz Normalizada con Media 0 con parámetros dados:")
 println(normalized_matrix_zero_mean)
+
+# Crear una nueva ANN
+buildClassANN(4, [4, 3, 4], 3)
+println("\nSe ha conseguido crear la red neuronal")
