@@ -1,10 +1,9 @@
+#4.1 and 4.2
 using LinearAlgebra
 include.([
     "04_accuracy.jl",
     "01_oneHotEncoding.jl"
     ])
-using LinearAlgebra
-
 
 function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
 
