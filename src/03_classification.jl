@@ -1,3 +1,4 @@
+#2
 function classifyOutputs(outputs::AbstractArray{<:Real,1}; threshold::Real=0.5)
     return outputs .>= threshold
 end;
