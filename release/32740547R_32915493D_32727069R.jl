@@ -210,7 +210,7 @@ function holdOut(N::Int, Pval::Real, Ptest::Real)
     end
     trainIndexes, otherIndexes = holdOut(N, Pval + Ptest)
     newN = length(otherIndexes)
-    inTest = Int(round(newN * Ptest))
+    inTest = Int(floor(newN * Ptest / (Pval + Ptest)))
     inVal = newN - inTest
     return (trainIndexes, otherIndexes[1:inVal], otherIndexes[inVal + 1:end])
 end;
