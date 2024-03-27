@@ -185,6 +185,7 @@ function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutp
         ann = Chain(ann..., softmax)
     else
         ann = Chain(ann..., Dense(topology[number_befure], 1, transferFunctions[number_before]))
+    end
     return ann
 end
 
