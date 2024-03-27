@@ -13,20 +13,25 @@ numOutputs: number of outputs the neuronal network has.
 transferFunctions: which transfer fuction each layer has.
 """
 function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int,  
-    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology))) 
-   
-    ann = Chain()                                                                                           #initializes the ANN
-    ann = Chain(ann..., Dense(numInputs, topology[1],transferFunctions[1]))                                 #first layer of the ANN
-    number_before = 1
-   
-    for number in 2:1: length(topology)                                                                    #loop that will create
-        ann = Chain(ann..., Dense(topology[number_before], topology[number],transferFunctions[number]))     #the other layers of the ANN
-        number_before = number
+    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
+    
+    ann = Chain()  # Inicializa la red neuronal
+
+    # Agrega las capas intermedias
+    for i in 1:1:length(topology)
+        if i == 1
+            ann = Chain(ann, Dense(numInputs, topology[i], transferFunctions[i]))
+        else
+            ann = Chain(ann, Dense(topology[i-1], topology[i], transferFunctions[i]))
+        end
     end
+
+    # Agrega la capa de salida
     if numOutputs > 2
-        ann = Chain(ann..., Dense(topology[number_before], numOutputs, identity))                               #last layer of the ANN
-        ann = Chain(ann..., softmax)
+        ann = Chain(ann, Dense(topology[end], numOutputs, identity), softmax)
     else
-        ann = Chain(ann..., Dense(topology[number_befure], 1, transferFunctions[number_before]))
+        ann = Chain(ann, Dense(topology[end], 1, transferFunctions[end]))
+    end
+    
     return ann
 end

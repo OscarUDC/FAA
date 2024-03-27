@@ -170,52 +170,62 @@ end;
 # -------------------------------------------------------
 # Funciones para crear y entrenar una RNA
 
-function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
-
-    ann = Chain()                                                                                           #initializes the ANN
-    ann = Chain(ann..., Dense(numInputs, topology[1],transferFunctions[1]))                                 #first layer of the ANN
-    number_before = 1
-   
-    for number in 2:1: length(topology)                                                                    #loop that will create
-        ann = Chain(ann..., Dense(topology[number_before], topology[number],transferFunctions[number]))     #the other layers of the ANN
-        number_before = number
-    end
-    if numOutputs > 2
-        ann = Chain(ann..., Dense(topology[number_before], numOutputs, identity))                               #lasts layers of the ANN
-        ann = Chain(ann..., softmax)
-    else
-        ann = Chain(ann..., Dense(topology[number_befure], 1, transferFunctions[number_before]))
-    end
-    return ann
-end
-
-function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01) 
-
+function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int,  
+    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
     
-    inputs = dataset[1]
-    targets = dataset[2]
-    inputsT = transpose(inputs)
-    targetsT = transpose(targets)
-    
-    ann = buildClassANN(size(inputs, 1), topology, size(targets, 1), transferFunctions)
-    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
+    ann = Chain()  # Inicializa la red neuronal
 
-    opt_state = Flux.setup(Adam(learningRate), ann)
-    for epoch in 1:maxEpochs
-        Flux.train!(loss, ann, [(inputsT, targetsT)], opt_state)
-        if loss(ann, inputsT, targetsT) <= minLoss
-            return ann
+    # Agrega las capas intermedias
+    for i in 1:1:length(topology)
+        if i == 1
+            ann = Chain(ann, Dense(numInputs, topology[i], transferFunctions[i]))
+        else
+            ann = Chain(ann, Dense(topology[i-1], topology[i], transferFunctions[i]))
         end
     end
+
+    # Agrega la capa de salida
+    if numOutputs > 2
+        ann = Chain(ann, Dense(topology[end], numOutputs, identity), softmax)
+    else
+        ann = Chain(ann, Dense(topology[end], 1, transferFunctions[end]))
+    end
+    
     return ann
 end
 
-function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
+function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}; 
+    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), 
+    maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01) 
 
-    newTargets = reshape(targets, 1, size(targets))
-    
-    trainClassANN(topology, Tuple{inputs, newTargets}, transferFunctions, maxEpochs, minLoss, learningRate)
+inputs = dataset[1]
+targets = dataset[2]
+inputsT = transpose(inputs)
+targetsT = transpose(targets)
+
+ann = buildClassANN(size(inputs, 1), topology, size(targets, 1), transferFunctions)
+loss(model, inputs, targets) = size(targets,1) > 1 ? Flux.Losses.binarycrossentropy(model(inputs), targets) : Flux.Losses.crossentropy(model(inputs), targets)
+
+opt_state = Flux.setup(Flux.Optimise.ADAM(learningRate), ann)
+
+for epoch in 1:1:maxEpochs
+    Flux.train!(loss, Flux.params(ann), [(inputsT, targetsT)], opt_state)
+    if loss(ann, inputsT, targetsT) <= minLoss
+        return ann
+    end
 end
+return ann
+end
+
+function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}; 
+    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), 
+    maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
+
+newTargets = reshape(targets, 1, length(targets))
+
+return trainClassANN(topology, (inputs, newTargets), transferFunctions, maxEpochs, minLoss, learningRate)
+end
+
 
 # ----------------------------------------------------------------------------------------------
 # ------------------------------------- Practica 3 ---------------------------------------------
