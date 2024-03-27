@@ -239,7 +239,7 @@ function holdOut(N::Int, Pval::Real, Ptest::Real)
     end
     trainIndexes, otherIndexes = holdOut(N, Pval + Ptest)
     newN = length(otherIndexes)
-    inTest = Int(round(newN * Ptest))
+    inTest = Int(floor(newN * Ptest / (Pval + Ptest)))
     inVal = newN - inTest
     return (trainIndexes, otherIndexes[1:inVal], otherIndexes[inVal + 1:end])
 end;
@@ -490,9 +490,6 @@ function crossvalidation(N::Int64, k::Int64)
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
-    if k < 10
-        error("k is too low")
-    end
     indexes = zeros(Int, length(targets))
     indexes[targets] .= crossvalidation(sum(targets), k)
     indexes[.!targets] .= crossvalidation(sum(.!targets), k)
