@@ -486,9 +486,6 @@ function crossvalidation(N::Int64, k::Int64)
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
-    if k < 10
-        error("k is too low")
-    end
     indexes = zeros(Int, length(targets))
     indexes[targets] .= crossvalidation(sum(targets), k)
     indexes[.!targets] .= crossvalidation(sum(.!targets), k)
