@@ -198,7 +198,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{Abstract
     targetsT = transpose(targets)
     
     ann = buildClassANN(size(inputs, 1), topology, size(targets, 1), transferFunctions)
-    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targetsT)
+    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
 
     opt_state = Flux.setup(Adam(learningRate), ann)
     for epoch in 1:maxEpochs
