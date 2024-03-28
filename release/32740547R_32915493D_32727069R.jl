@@ -198,23 +198,23 @@ function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{Abstract
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), 
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01) 
 
-inputs = dataset[1]
-targets = dataset[2]
-inputsT = transpose(inputs)
-targetsT = transpose(targets)
+    inputs = dataset[1]
+    targets = dataset[2]
+    inputsT = transpose(inputs)
+    targetsT = transpose(targets)
 
-ann = buildClassANN(size(inputs, 1), topology, size(targets, 1), transferFunctions)
-loss(model, inputs, targets) = size(targets,1) > 1 ? Flux.Losses.binarycrossentropy(model(inputs), targets) : Flux.Losses.crossentropy(model(inputs), targets)
+    ann = buildClassANN(size(inputs, 1), topology, size(targets, 1), transferFunctions)
+    loss(model, inputs, targets) = size(targets,1) > 1 ? Flux.Losses.binarycrossentropy(model(inputs), targets) : Flux.Losses.crossentropy(model(inputs), targets)
 
-opt_state = Flux.setup(Flux.Optimise.ADAM(learningRate), ann)
+    opt_state = Flux.setup(Flux.Optimise.ADAM(learningRate), ann)
 
-for epoch in 1:1:maxEpochs
-    Flux.train!(loss, Flux.params(ann), [(inputsT, targetsT)], opt_state)
-    if loss(ann, inputsT, targetsT) <= minLoss
-        return ann
+    for epoch in 1:maxEpochs
+        Flux.train!(loss, Flux.params(ann), [(inputsT, targetsT)], opt_state)
+        if loss(ann, inputsT, targetsT) <= minLoss
+            return ann
+        end
     end
-end
-return ann
+    return ann
 end
 
 function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}; 
@@ -223,7 +223,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tupl
 
 newTargets = reshape(targets, 1, length(targets))
 
-return trainClassANN(topology, (inputs, newTargets), transferFunctions, maxEpochs, minLoss, learningRate)
+return trainClassANN(topology, Tuple{inputs, newTargets}, transferFunctions, maxEpochs, minLoss, learningRate)
 end
 
 
@@ -233,27 +233,38 @@ end
 
 using Random
 
+
 function holdOut(N::Int, P::Real)
     if P < 0 || P > 1
         error("P must be in the interval [0, 1]")
     end
-    indexes = randperm(N)
-    inTest = Int(round(P * N))
-    inTrain = N - inTest
-    return (indexes[1:inTrain], indexes[inTrain + 1:end])
+    # Generar una permutación aleatoria de los índices
+    indices = randperm(N)
+
+    # Calcular el número de patrones para el conjunto de test
+    numTest = round(Int, N * P)
+
+    # Separar los índices en conjuntos de entrenamiento y test
+    testIndices = indices[1:numTest]
+    trainIndices = indices[numTest+1:N]
+
+    return Tuple{trainIndices, testIndices}
 end;
 
 function holdOut(N::Int, Pval::Real, Ptest::Real)
     if (Pval < 0 || Pval > 1) || (Ptest < 0 || Ptest > 1) || (Pval + Ptest > 1)
         error("Pval and Ptest must be in the interval [0, 1], and Pval + Ptest can't be greater than 1")
     end
-    trainIndexes, otherIndexes = holdOut(N, Pval + Ptest)
-    newN = length(otherIndexes)
-    inTest = Int(floor(newN * Ptest / (Pval + Ptest)))
-    inVal = newN - inTest
-    return (trainIndexes, otherIndexes[1:inVal], otherIndexes[inVal + 1:end])
-end;
 
+    #separamos train y test de validación con holdOut
+    trainTestIndexes, valIndexes = holdOut(N, Pval)
+
+    #separamos train de test con holdOut otra vez
+    trainIndexes, testIndexes = holdOut(length(trainTestIndexes), Ptest / (1 - Pval))
+
+    #Returneamos todo xD
+    return Tuple{trainIndexes, valIndexes, testIndexes}
+end;
 
 # Funcion para entrenar RR.NN.AA. con conjuntos de entrenamiento, validacion y test. Estos dos ultimos son opcionales
 # Es la funcion anterior, modificada para calcular errores en los conjuntos de validacion y test y realizar parada temprana si es necesario
