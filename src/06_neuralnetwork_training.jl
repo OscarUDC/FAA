@@ -22,7 +22,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     minLoss::Real=0.0, 
     learningRate::Real=0.01)
 
-    newTargets = reshape(targets, :, size(targets))
+    newTargets = reshape(targets, :, 1)
     
     trainClassANN(topology, Tuple{inputs, newTargets}, transferFunctions, maxEpochs, minLoss, learningRate)
 end
@@ -47,17 +47,20 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     minLoss::Real=0.0,
     learningRate::Real=0.01)
     
-    inputs = dataset[0]
-    targets = dataset[1]
+    inputs, targets = dataset
+
     inputsT = transpose(inputs)
     targetsT = transpose(targets)
     
-    ann = buildClassANN(numInputs=size(inputs, 1), topology, numOutputs=size(targets, 1), transferFunctions)
-    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targetsT)
+    inputsT = Float32.(inputsT)
+    targetsT = Float32.(targetsT)
 
-    opt_state = Flux.setup(Adam(learningRate), ann)
+    ann = buildClassANN(numInputs=size(inputs, 1), topology, numOutputs=size(targets, 1), transferFunctions)
+    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
+
+    opt = Adam(learningRate)
     for epoch in 1:maxEpochs
-        Flux.train!(loss, ann, [(inputsT, targetsT)], opt_state)
+        Flux.train!(loss, ann, [(inputsT, targetsT)], opt)
         if loss(ann, inputsT, targetsT) <= minLoss
             return ann
         end
@@ -105,7 +108,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     ann = buildClassANN(size(inputsTr, 1),topology, size(targetsTr, 1))
 
     # Definimos la función de pérdida
-    loss(x, y) = Flux.crossentropy(ann(x), y)
+    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
 
     # Inicializamos el optimizador
     opt = ADAM(learningRate)
@@ -121,18 +124,18 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     # Bucle de entrenamiento
     for epoch in 1:maxEpochs  
         # Calculamos el valor de pérdida en cada época
-        currentLossTr = loss(inputsTr, targetsTr)
+        currentLossTr = loss(ann, inputsTr, targetsTr)
         push!(lossHistoryTr, currentLossTr)
         
         if testDataset != (Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0))
-            currentLossTe = loss(inputsTe, targetsTe)
+            currentLossTe = loss(ann, inputsTe, targetsTe)
             push!(lossHistoryTe, currentLossTe)
         end
 
         Flux.train!(loss, Flux.params(ann), [(inputsTr, targetsTr)], opt)
 
         if validationDataset != (Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0))
-            currentLossV = loss(inputsV, targetsV)
+            currentLossV = loss(ann, inputsV, targetsV)
             push!(lossHistoryV, currentLossV)
             if currentLossV < errorMejorRed
                 mejorRed = deepcopy(ann)
