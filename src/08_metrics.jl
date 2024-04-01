@@ -6,65 +6,65 @@ include.([
     ])
 
 function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
+    VP = sum(outputs .& targets)
+    VN = sum((.!outputs) .& (.!targets))
+    FP = sum(outputs .& .!targets)
+    FN = sum(.!outputs .& targets)
 
-    VP = sum(outputs .& targets)            # Verdaderos positivos
-    VN = sum((.!outputs) .& (.!targets))    # Verdaderos negativos
-    FP = sum(outputs .& .!targets)  # Falsos positivos
-    FN = sum(.!outputs .& targets)  # Falsos negativos
-
+    # Precisión
     if (VP + VN + FP + FN) == 0
         accuracy = 0.0
     else
         accuracy = (VN + VP) / (VN + VP + FN + FP)
     end
     
-    if (VN + VP + FN + FP) == 0
-        error_rate = 0.0
-    else
-        error_rate = (FN + FP) / (VN + VP + FN + FP)
-    end
-
-#-----------------------
-    
+    # Sensibilidad (Recall)
     if VP == 0 && FN == 0
         sensitivity = 1.0
     else
         sensitivity = VP / (FN + VP)
     end
     
+    # Especificidad
     if VN == 0 && FP == 0
         specificity = 1.0
     else
         specificity = VN / (FP + VN)
     end
     
+    # Valor predictivo positivo (Precision)
     if VP == 0 && FP == 0
         ppv = 1.0
     else
         ppv = VP / (VP + FP)
     end
 
+    # Valor predictivo negativo
     if VN == 0 && FN == 0
         npv = 1.0
     else
         npv = VN / (VN + FN)
     end
     
-    if sensitivity == 0 && prec == 0
+    # F1-score
+    if sensitivity == 0 && ppv == 0
         f1_score = 0.0
     else
-        f1_score = 2 * (accuracy * sensitivity) / (accuracy + sensitivity)
-    end
+        f1_score = 2 * (ppv * sensitivity) / (ppv + sensitivity)
+    end    
 
-    confusion_matrix = [VP FN; FP VN]
+    # Matriz de confusión
+    confusion_matrix = [VP FP; FN VN]
 
-    return (accuracy, error_rate, sensitivity, specificity, ppv, npv, f1_score, confusion_matrix)
+    return (accuracy, 1 - accuracy, sensitivity, specificity, ppv, npv, f1_score, confusion_matrix)
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Real,1}, targets::AbstractArray{Bool,1}; threshold::Real=0.5)
     binary_outputs = outputs .≥ threshold
-    return confusionMatrix(binary_outputs, targets) #? Cogemos solo los outputs que pasen el umbral
+    return confusionMatrix(binary_outputs, targets)
 end;
+
+
 
 function printConfusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
     results = confusionMatrix(outputs, targets)

@@ -25,7 +25,8 @@
 		"WallabyJs.console-ninja",
 		"vivaxy.vscode-conventional-commits",
 		"joshbolduc.commitlint",
-		"adam-bender.commit-message-editor"
+		"adam-bender.commit-message-editor",
+		"ms-dotnettools.dotnet-interactive-vscode"
 
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
