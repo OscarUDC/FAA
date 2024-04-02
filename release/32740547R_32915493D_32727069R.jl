@@ -494,69 +494,80 @@ end;
 
 
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
-    n_classes = size(outputs, 2)
-    n_patterns = size(outputs, 1)
-    if n_classes != n_patterns != 2
-        error("Invalid input dimensions")
+    n_patterns, n_classes = size(outputs)  # Obtener las dimensiones de las matrices
+    if n_classes != size(targets, 2)  # Verificar si el número de columnas es diferente en las matrices outputs y targets
+        error("Number of columns in outputs and targets matrices must be equal")
     end
 
-    # Verificar si solo hay una columna y llamar a la función anterior
-    if n_classes == 1
+    if n_classes == 1  # Si solo hay una clase, llamar a la función anterior
         return confusionMatrix(outputs[:, 1], targets[:, 1]; weighted=weighted)
     end
 
-    # Inicialización de vectores para métricas
+    if n_classes == 2  # Comprobar si el número de clases es igual a 2
+        error("Invalid input dimensions")
+    end
+
+    # Inicializar vectores de métricas con ceros
     sensitivity = zeros(Float64, n_classes)
     specificity = zeros(Float64, n_classes)
     VPP = zeros(Float64, n_classes)
     VPN = zeros(Float64, n_classes)
     F1 = zeros(Float64, n_classes)
 
-    # Cálculo de métricas para cada clase
-    for i in 1:n_classes
-        outputs_class = outputs[:, i]
-        targets_class = targets[:, i]
-        class_metrics = confusionMatrix(outputs_class, targets_class)
-        sensitivity[i] = class_metrics[3]
-        specificity[i] = class_metrics[4]
-        VPP[i] = class_metrics[5]
-        VPN[i] = class_metrics[6]
-        F1[i] = class_metrics[7]
-    end
+    # Calcular matriz de confusión(sin necesidad de inicializarla primero con ceros)
+    confusion_matrix = [sum(outputs[:, j] .& targets[:, i]) for i in 1:n_classes, j in 1:n_classes] #Hacemos un doble bucle para rellenar la matriz con ceros de primeras, con el fin de reservar los huecos en memoria
 
-    # Cálculo de métricas macro o weighted
+    # Calcular métricas macro o weighted
     if weighted
         weights = sum(targets, dims=1)
-        prec = sum(VPP .* weights) / sum(weights)
-        error_rate = 1 - prec
-        sensitivity = sum(sensitivity .* weights) / sum(weights)
-        specificity = sum(specificity .* weights) / sum(weights)
-        VPP = sum(VPP .* weights) / sum(weights)
-        VPN = sum(VPN .* weights) / sum(weights)
-        F1 = sum(F1 .* weights) / sum(weights)
+        TP = sum(outputs .& targets, dims=1)
+        TN = sum((.!outputs) .& (.!targets), dims=1)
+        FP = sum(outputs .& .!targets, dims=1)
+        FN = sum(.!outputs .& targets, dims=1)
+
+        accuracy = sum(TP ./ (TP .+ FP) .* weights) / sum(weights)
+        error_rate = 1 - accuracy
+        sensitivity = sum(TP ./ (TP .+ FN) .* weights) / sum(weights)
+        specificity = sum(TN ./ (TN .+ FP) .* weights) / sum(weights)
+        VPP = sensitivity  # Same as sensitivity for multiclass
+        VPN = specificity  # Same as specificity for multiclass
+        F1 = 2 * sensitivity * accuracy / (sensitivity + accuracy)
+
     else
-        prec = accuracy(outputs, targets)
-        error_rate = 1 - prec
-        sensitivity = mean(sensitivity)
-        specificity = mean(specificity)
-        VPP = mean(VPP)
-        VPN = mean(VPN)
-        F1 = mean(F1)
+        TP = sum(outputs .& targets, dims=1)
+        TN = sum((.!outputs) .& (.!targets), dims=1)
+        FP = sum(outputs .& .!targets, dims=1)
+        FN = sum(.!outputs .& targets, dims=1)
+
+        accuracy = sum(TP ./ (TP .+ FP)) / n_classes
+        error_rate = 1 - accuracy
+        sensitivity = sum(TP ./ (TP .+ FN)) / n_classes
+        specificity = sum(TN ./ (TN .+ FP)) / n_classes
+        VPP = sensitivity  # Same as sensitivity for multiclass
+        VPN = specificity  # Same as specificity for multiclass
+        F1 = 2 * sensitivity * accuracy / (sensitivity + accuracy) / n_classes
     end
 
-    # Cálculo de matriz de confusión
-    confusion_matrix = [sum(outputs[:, j] .& targets[:, i]) for i in 1:n_classes, j in 1:n_classes]
+    # Unir los valores de métricas para cada clase en un único valor usando la estrategia macro o weighted
+    sensitivity = weighted ? sensitivity : mean(sensitivity)
+    specificity = weighted ? specificity : mean(specificity)
+    VPP = weighted ? VPP : mean(VPP)
+    VPN = weighted ? VPN : mean(VPN)
+    F1 = weighted ? F1 : mean(F1)
 
-    return (prec, error_rate, sensitivity, specificity, VPP, VPN, F1, confusion_matrix)
+    return (accuracy, error_rate, sensitivity, specificity, VPP, VPN, F1, confusion_matrix)
 end;
 
+# Definir función confusionMatrix para matrices de valores reales
 function confusionMatrix(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
+    # Convertir outputs a valores booleanos si es necesario
     outputs_bool = classifyOutputs(outputs)
     return confusionMatrix(outputs_bool, targets; weighted=weighted)
 end;
 
+# Definir función confusionMatrix para vectores de cualquier tipo
 function confusionMatrix(outputs::AbstractArray{<:Any,1}, targets::AbstractArray{<:Any,1}; weighted::Bool=true)
-    # Asegurar que todos los elementos de outputs estén presentes en targets
+    # Asegurarse de que todas las clases del vector de outputs estén incluidas en el vector de targets
     @assert all([in(output, unique(targets)) for output in outputs]) "All elements of outputs must be present in targets"
     
     # Convertir los vectores targets y outputs a matrices one-hot
