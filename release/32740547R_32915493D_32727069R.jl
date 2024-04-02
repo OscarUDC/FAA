@@ -617,15 +617,21 @@ function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,2}, k::Int64)
-    #
-    # Codigo a desarrollar
-    #
+    if k < 10
+        print("WARNING: K is very low, may affect results")
+    indexes = zeros(Int, size(targets, 1))
+    for class in size(targets, 2)
+        indexes[class] = crossvalidation(sum(targets[:, class]), k)
+    return indexes
 end;
 
 function crossvalidation(targets::AbstractArray{<:Any,1}, k::Int64)
-    #
-    # Codigo a desarrollar
-    #
+    if size(targets, 2) > 2
+        targets = oneHotEncoding(targets)
+    indexes = zeros(Int, size(targets, 1))
+    for class in size(targets, 2)
+        indexes[class] = crossvalidation(sum(targets[:, class]), k)
+    return indexes
 end;
 
 
