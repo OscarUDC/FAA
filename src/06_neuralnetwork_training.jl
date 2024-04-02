@@ -55,8 +55,8 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     inputsT = Float32.(inputsT)
     targetsT = Float32.(targetsT)
 
-    ann = buildClassANN(numInputs=Int64(size(inputs, 1)), topology, Int64(size(targets, 1)))
-    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
+    ann = buildClassANN(Int64(size(inputs, 1)), topology, Int64(size(targets, 1)))
+    loss(model, inputs, targets) = size(targets,1)==1 ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
 
     opt = Adam(learningRate)
     for epoch in 0:maxEpochs
@@ -108,7 +108,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     ann = buildClassANN(Int64(size(inputsTr, 1)),topology, Int64(size(targetsTr, 1)))
 
     # Definimos la función de pérdida
-    loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
+    loss(model, inputs, targets) = size(targets,1)==1 ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
 
     # Inicializamos el optimizador
     opt = Adam(learningRate)
