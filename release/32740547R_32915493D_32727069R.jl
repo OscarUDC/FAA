@@ -416,6 +416,13 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
         accuracy = (VN + VP) / (VN + VP + FN + FP)
     end
     
+    # Tasa de error
+    if (VP + VN + FP + FN) == 0
+        error_rate = 0.0
+    else
+        error_rate = (FN + FP) / (VN + VP + FN + FP)
+    end
+    
     # Sensibilidad (Recall)
     if VP == 0 && FN == 0
         sensitivity = 1.0
@@ -452,9 +459,9 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
     end    
 
     # Matriz de confusión
-    confusion_matrix = [VP FP; FN VN]
+    confusion_matrix = [VN FP; FN VP]
 
-    return (accuracy, 1 - accuracy, sensitivity, specificity, ppv, npv, f1_score, confusion_matrix)
+    return (accuracy, error_rate, sensitivity, specificity, ppv, npv, f1_score, confusion_matrix)
 end;
 
 function confusionMatrix(outputs::AbstractArray{<:Real,1}, targets::AbstractArray{Bool,1}; threshold::Real=0.5)
@@ -489,10 +496,10 @@ end;
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
     n_classes = size(outputs, 2)
     n_patterns = size(outputs, 1)
-    if n_classes <= 2 || n_patterns <= 2
+    if n_classes != n_patterns != 2
         error("Invalid input dimensions")
     end
-    
+
     # Verificar si solo hay una columna y llamar a la función anterior
     if n_classes == 1
         return confusionMatrix(outputs[:, 1], targets[:, 1]; weighted=weighted)
@@ -520,13 +527,13 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     # Cálculo de métricas macro o weighted
     if weighted
         weights = sum(targets, dims=1)
-        prec = dot(VPP, weights) / sum(weights)
+        prec = sum(VPP .* weights) / sum(weights)
         error_rate = 1 - prec
-        sensitivity = dot(sensitivity, weights) / sum(weights)
-        specificity = dot(specificity, weights) / sum(weights)
-        VPP = dot(VPP, weights) / sum(weights)
-        VPN = dot(VPN, weights) / sum(weights)
-        F1 = dot(F1, weights) / sum(weights)
+        sensitivity = sum(sensitivity .* weights) / sum(weights)
+        specificity = sum(specificity .* weights) / sum(weights)
+        VPP = sum(VPP .* weights) / sum(weights)
+        VPN = sum(VPN .* weights) / sum(weights)
+        F1 = sum(F1 .* weights) / sum(weights)
     else
         prec = accuracy(outputs, targets)
         error_rate = 1 - prec
