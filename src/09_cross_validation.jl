@@ -20,8 +20,9 @@ end;
 
 function crossvalidation(targets::AbstractArray{Bool,2}, k::Int64)
     indexes = zeros(Int, size(targets, 1))
-    for class in size(targets, 2)
+    for class in axes(targets, 2)
         indexes[class] = crossvalidation(sum(targets[:, class]), k)
+    end
     return indexes
 end;
 
@@ -29,8 +30,9 @@ function crossvalidation(targets::AbstractArray{<:Any,1}, k::Int64)
     if size(targets, 2) > 2
         targets = oneHotEncoding(targets)
     indexes = zeros(Int, size(targets, 1))
-    for class in size(targets, 2)
+    for class in axes(targets, 2)
         indexes[class] = crossvalidation(sum(targets[:, class]), k)
+    end
     return indexes
 end;
 
