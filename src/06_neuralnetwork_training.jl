@@ -55,11 +55,11 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     inputsT = Float32.(inputsT)
     targetsT = Float32.(targetsT)
 
-    ann = buildClassANN(numInputs=size(inputs, 1), topology, numOutputs=size(targets, 1), transferFunctions)
+    ann = buildClassANN(numInputs=Int64(size(inputs, 1)), topology, Int64(size(targets, 1)))
     loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
 
     opt = Adam(learningRate)
-    for epoch in 1:maxEpochs
+    for epoch in 0:maxEpochs
         Flux.train!(loss, ann, [(inputsT, targetsT)], opt)
         if loss(ann, inputsT, targetsT) <= minLoss
             return ann
@@ -105,13 +105,13 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     targetsTe = Float32.(targetsTe)
 
     # Construimos la red neuronal
-    ann = buildClassANN(size(inputsTr, 1),topology, size(targetsTr, 1))
+    ann = buildClassANN(Int64(size(inputsTr, 1)),topology, Int64(size(targetsTr, 1)))
 
     # Definimos la función de pérdida
     loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
 
     # Inicializamos el optimizador
-    opt = ADAM(learningRate)
+    opt = Adam(learningRate)
 
     # Vector para almacenar los valores de pérdida en cada época
     lossHistoryTr = Float32[]
@@ -122,7 +122,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     errorMejorRed = Inf
     ciclos = 0
     # Bucle de entrenamiento
-    for epoch in 1:maxEpochs  
+    for epoch in 0:maxEpochs  
         # Calculamos el valor de pérdida en cada época
         currentLossTr = loss(ann, inputsTr, targetsTr)
         push!(lossHistoryTr, currentLossTr)
@@ -182,9 +182,9 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     inputs_test, targets_test = testDataset
     
     # Convertir las salidas deseadas de matrices a vectores
-    targets_train = reshape(trainingDataset[2], :, 1)
-    targets_val = reshape(validationDataset[2], :, 1)
-    targets_test = reshape(testDataset[2], :, 1)
+    targets_train = reshape(targets_train, :, 1)
+    targets_val = reshape(targets_val, :, 1)
+    targets_test = reshape(targets_test, :, 1)
 
     # Llamamos a la función original con los nuevos argumentos
     return trainClassANN(topology, (inputs_train, targets_train); validationDataset =(inputs_val, targets_val), testDataset=(inputs_test, targets_test), transferFunctions=transferFunctions, maxEpochs=maxEpochs, minLoss=minLoss, learningRate=learningRate)

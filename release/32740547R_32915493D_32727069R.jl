@@ -7,6 +7,7 @@
 # ----------------------------------------------------------------------------------------------
 
 using Statistics
+using Random
 using Flux
 using Flux.Losses
 
@@ -170,8 +171,7 @@ end;
 # -------------------------------------------------------
 # Funciones para crear y entrenar una RNA
 
-function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int,  
-    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
+function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
     
     ann = Chain()  # Inicializa la red neuronal
 
@@ -209,11 +209,11 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     inputsT = Float32.(inputsT)
     targetsT = Float32.(targetsT)
 
-    ann = buildClassANN(numInputs=size(inputs, 1), topology=topology, numOutputs=size(targets, 1), transferFunctions=transferFunctions)
+    ann = buildClassANN(Int64(size(inputs, 1)), topology, Int64(size(targets, 1)))
     loss(model, inputs, targets) = size(targets,1) ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
 
     opt = Adam(learningRate)
-    for epoch in 1:maxEpochs
+    for epoch in 0:maxEpochs
         Flux.train!(loss, ann, [(inputsT, targetsT)], opt)
         if loss(ann, inputsT, targetsT) <= minLoss
             return ann
@@ -316,7 +316,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     errorMejorRed = Inf
     ciclos = 0
     # Bucle de entrenamiento
-    for epoch in 1:maxEpochs  
+    for epoch in 0:maxEpochs  
         # Calculamos el valor de pérdida en cada época
         currentLossTr = loss(ann, inputsTr, targetsTr)
         push!(lossHistoryTr, currentLossTr)

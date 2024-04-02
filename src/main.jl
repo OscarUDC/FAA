@@ -12,7 +12,8 @@ include.([
     "03_classification.jl",
     "04_accuracy.jl",
     "05_neuralnetwork_construction.jl",
-    "06_neuralnetwork_training.jl"
+    "06_neuralnetwork_training.jl",
+    "07_data_parsing.jl"
 ])
 
 # Cargar datos desde un archivo CSV (o el formato que estés utilizando)
@@ -59,5 +60,26 @@ println("\nNueva Matriz Normalizada con Media 0 con parámetros dados:")
 println(normalized_matrix_zero_mean)
 
 # Crear una nueva ANN
-buildClassANN(4, [4, 3, 4], 3)
+ann = buildClassANN(4, [4, 3, 4], 3)
+
 println("\nSe ha conseguido crear la red neuronal")
+println(ann.layers)
+
+ann = buildClassANN(3,[2, 2, 2], 2)
+
+println("\nSe ha conseguido crear la red neuronal")
+println(ann.layers)
+
+#holdOut
+
+tupla = holdOut(100, 0.15)
+println()
+println(isa(tupla, Tuple))
+println(length(tupla[1])/100, "\n", length(tupla[2])/100)
+
+tupla = holdOut(100, 0.15, 0.15)
+
+
+println()
+println(isa(tupla, Tuple))
+println(length(tupla[1])/100, "\n", length(tupla[2])/100, "\n", length(tupla[3])/100)

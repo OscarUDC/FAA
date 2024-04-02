@@ -1,3 +1,5 @@
+using Random
+
 function holdOut(N::Int, P::Real)
     if P < 0 || P > 1
         error("P must be in the interval [0, 1]")
