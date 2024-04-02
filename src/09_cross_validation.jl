@@ -12,6 +12,8 @@ function crossvalidation(N::Int64, k::Int64)
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
+    if k < 10
+        print("WARNING: K is very low, may affect results")
     indexes = zeros(Int, length(targets))
     indexes[targets] .= crossvalidation(sum(targets), k)
     indexes[.!targets] .= crossvalidation(sum(.!targets), k)
@@ -19,55 +21,19 @@ function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,2}, k::Int64)
-    #
-    # Codigo a desarrollar
-    #
+    if k < 10
+        print("WARNING: K is very low, may affect results")
+    indexes = zeros(Int, size(targets, 1))
+    for class in size(targets, 2)
+        indexes[class] = crossvalidation(sum(targets[:, class]), k)
+    return indexes
 end;
 
 function crossvalidation(targets::AbstractArray{<:Any,1}, k::Int64)
-    #
-    # Codigo a desarrollar
-    #
+    if size(targets, 2) > 2
+        targets = oneHotEncoding(targets)
+    indexes = zeros(Int, size(targets, 1))
+    for class in size(targets, 2)
+        indexes[class] = crossvalidation(sum(targets[:, class]), k)
+    return indexes
 end;
-
-# Test for crossvalidation(N, k)
-println("Test 1: crossvalidation(N, k)")
-try
-    result = crossvalidation(10, 3)
-    println("Test 1a (N=10, k=3) result: ", result)
-catch e
-    println("Test 1a (N=10, k=3) error: ", e)
-end
-
-try
-    result = crossvalidation(5, 10)
-    println("Test 1b (N=5, k=10) result: ", result)
-catch e
-    println("Test 1b (N=5, k=10) error: ", e)
-end
-
-# Test for crossvalidation with a boolean array
-println("\nTest 2: crossvalidation with a boolean array")
-bool_array = [true, true, false, true, false]
-try
-    result = crossvalidation(bool_array, 2)
-    println("Test 2 (Boolean array, k=2) result: ", result)
-catch e
-    println("Test 2 (Boolean array, k=2) error: ", e)
-end
-
-targets = [true false; false true; true false; false true; true false]
-k = 2
-targets = [true false; false true; true false; false true; true false]
-k = 2
-
-# Llamada a la función con los datos de prueba
-indices = crossvalidation(targets, k)
-
-# Imprimir resultados
-println("Indices para k = 2: ", indices)
-
-# Prueba con un valor diferente de k, por ejemplo 3
-k = 3
-indices = crossvalidation(targets, k)
-println("Indices para k = 3: ", indices)
