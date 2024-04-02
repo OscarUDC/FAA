@@ -78,8 +78,6 @@ println(isa(tupla, Tuple))
 println(length(tupla[1])/100, "\n", length(tupla[2])/100)
 
 tupla = holdOut(100, 0.15, 0.15)
-
-
 println()
 println(isa(tupla, Tuple))
 println(length(tupla[1])/100, "\n", length(tupla[2])/100, "\n", length(tupla[3])/100)
