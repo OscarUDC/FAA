@@ -36,7 +36,7 @@ function crossvalidation(targets::AbstractArray{<:Any,1}, k::Int64)
     return indexes
 end;
 
-function ANNCrossValidation(topology::AbstractArray{<:Int,1},
+function ANNCrossValidation(;topology::AbstractArray{<:Int,1},
     inputs::AbstractArray{<:Real,2}, targets::AbstractArray{<:Any,1},
     crossValidationIndices::Array{Int64,1};
     numExecutions::Int=50,
@@ -44,7 +44,7 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, validationRatio::Real=0, maxEpochsVal::Int=20, showText::Bool=false)
     
     numFolds = maximum(crossValidationIndices)
-    encodedInputs = oneHotEncoding(inputs)
+    inputs = oneHotEncoding(inputs)
     (accuracy, errorRate, sensitivity, specificity, ppv, npv, f1Score) = (Vector{Float64}(undef, numFolds) for _ in 1:7)
     for fold in 1:numFolds
         trainingInputs = inputs[crossValidationIndices .!= fold, :]
@@ -60,11 +60,11 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
                 validationInputs = trainingInputs[validationIndexes, :]
                 newTrainingTargets = trainingTargets[trainingIndexes, :]
                 validationTargets = trainingTargets[validationIndexes, :]
-                ann, other... = trainClassANN(topology, (newTrainingInputs, newTrainingTargets); validationDataset = (validationInputs, validationTargets), testDataset = (testInputs, testTargets), transferFunctions = transferFunctions, maxEpochs = maxEpochs, maxEpochsVal = maxEpochsVal, minLoss = minLoss, learningRate = learningRate)
+                ANN, _... = trainClassANN(topology, (newTrainingInputs, newTrainingTargets); validationDataset = (validationInputs, validationTargets), testDataset = (testInputs, testTargets), transferFunctions = transferFunctions, maxEpochs = maxEpochs, maxEpochsVal = maxEpochsVal, minLoss = minLoss, learningRate = learningRate)
             else
-                ann, other... = trainClassANN(topology, (newTrainingInputs, newTrainingTargets); transferFunctions = transferFunctions, maxEpochs = maxEpochs, minLoss = minLoss, learningRate = learningRate)
+                ANN, _... = trainClassANN(topology, (newTrainingInputs, newTrainingTargets); transferFunctions = transferFunctions, maxEpochs = maxEpochs, minLoss = minLoss, learningRate = learningRate)
             end
-            testOutputs = ann(testInputs')
+            testOutputs = ANN(testInputs')
             accuracyExecution[execution], errorRateExecution[execution], sensitivityExecution[execution], specificityExecution[execution], ppvExecution[execution], npvExecution[execution], f1ScoreExecution[execution] = confusionMatrix(testOutputs', testTargets)
         end
         accuracy[fold] = mean(accuracyExecution)
