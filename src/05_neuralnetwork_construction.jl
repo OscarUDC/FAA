@@ -28,7 +28,8 @@ function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutp
 
     # Agrega la capa de salida
     if numOutputs > 2
-        ann = Chain(ann..., Dense(topology[end], numOutputs, identity), softmax)
+        ann = Chain(ann..., Dense(topology[end], numOutputs, identity))
+        ann = Chain(ann..., identity)
     else
         ann = Chain(ann..., Dense(topology[end], 1, transferFunctions[end]))
     end

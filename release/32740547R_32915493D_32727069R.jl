@@ -178,17 +178,18 @@ function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutp
     # Agrega las capas intermedias
     for i in 1:1:length(topology)
         if i == 1
-            ann = Chain(ann, Dense(numInputs, topology[i], transferFunctions[i]))
+            ann = Chain(ann..., Dense(numInputs, topology[i], transferFunctions[i]))
         else
-            ann = Chain(ann, Dense(topology[i-1], topology[i], transferFunctions[i]))
+            ann = Chain(ann..., Dense(topology[i-1], topology[i], transferFunctions[i]))
         end
     end
 
     # Agrega la capa de salida
     if numOutputs > 2
-        ann = Chain(ann, Dense(topology[end], numOutputs, identity), softmax)
+        ann = Chain(ann..., Dense(topology[end], numOutputs, identity))
+        ann = Chain(ann...,identity)
     else
-        ann = Chain(ann, Dense(topology[end], 1, transferFunctions[end]))
+        ann = Chain(ann..., Dense(topology[end], 1, transferFunctions[end]))
     end
     
     return ann
