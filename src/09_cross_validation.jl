@@ -67,7 +67,7 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
                 transferFunctions = transferFunctions, maxEpochs = maxEpochs, maxEpochsVal = maxEpochsVal, minLoss = minLoss,
                 learningRate = learningRate)
             else
-                ann, _... = trainClassANN(topology, (newTrainingInputs, newTrainingTargets);
+                ann, _... = trainClassANN(topology, (trainingInputs, trainingTargets);
                 transferFunctions = transferFunctions, maxEpochs = maxEpochs, minLoss = minLoss,
                 learningRate = learningRate)
             end

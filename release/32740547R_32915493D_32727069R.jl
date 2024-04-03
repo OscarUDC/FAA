@@ -111,12 +111,12 @@ function normalizeZeroMean!(dataset::AbstractArray{<:Real,2})
     dataset ./= stds
 
 end;
-function normalizeZeroMean( dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
+function normalizeZeroMean(dataset::AbstractArray{<:Real,2}, normalizationParameters::NTuple{2, AbstractArray{<:Real,2}})
     means, stds = normalizationParameters
     return (dataset .- means) ./ stds
 
 end;
-function normalizeZeroMean( dataset::AbstractArray{<:Real,2})
+function normalizeZeroMean(dataset::AbstractArray{<:Real,2})
     means = mean(dataset, dims=1)
     stds = std(dataset, dims=1)
     return (dataset .- means) ./ stds
@@ -782,7 +782,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict,
         throw(ArgumentError("Model type $modelType does not exist or is not allowed"))
     end
     numFolds = maximum(crossValidationIndices)
-    inputs = confusionMatrix(inputs, targets)
+    normalizeZeroMean!(inputs)
     (accuracy, errorRate, sensitivity, specificity, ppv, npv, f1Score) = (Vector{Float64}(undef, numFolds) for _ in 1:7)
     for fold in 1:numFolds
         trainingInputs = inputs[crossValidationIndices .!= fold, :]
