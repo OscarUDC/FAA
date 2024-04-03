@@ -37,7 +37,7 @@ function crossvalidation(targets::AbstractArray{<:Any,1}, k::Int64)
     return indexes
 end;
 
-function ANNCrossValidation(;topology::AbstractArray{<:Int,1},
+function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     inputs::AbstractArray{<:Real,2}, targets::AbstractArray{<:Any,1},
     crossValidationIndices::Array{Int64,1};
     numExecutions::Int=50,
@@ -52,7 +52,8 @@ function ANNCrossValidation(;topology::AbstractArray{<:Int,1},
         trainingTargets = targets[crossValidationIndices .!= fold, :]
         testInputs = inputs[crossValidationIndices .== fold, :]
         testTargets = targets[crossValidationIndices .== fold, :]
-        (accuracyExecution, errorRateExecution, sensitivityExecution, specificityExecution, ppvExecution, npvExecution, f1ScoreExecution) = (Vector{Float64}(undef, numExecutions) for _ in 1:7)
+        (accuracyExecution, errorRateExecution, sensitivityExecution, specificityExecution,
+        ppvExecution, npvExecution, f1ScoreExecution) = (Vector{Float64}(undef, numExecutions) for _ in 1:7)
         for execution in 1:numExecutions
             if validationRatio > 0
                 N = size(trainingInputs, 1)
@@ -61,12 +62,19 @@ function ANNCrossValidation(;topology::AbstractArray{<:Int,1},
                 validationInputs = trainingInputs[validationIndexes, :]
                 newTrainingTargets = trainingTargets[trainingIndexes, :]
                 validationTargets = trainingTargets[validationIndexes, :]
-                ANN, _... = trainClassANN(topology, (newTrainingInputs, newTrainingTargets); validationDataset = (validationInputs, validationTargets), testDataset = (testInputs, testTargets), transferFunctions = transferFunctions, maxEpochs = maxEpochs, maxEpochsVal = maxEpochsVal, minLoss = minLoss, learningRate = learningRate)
+                ann, _... = trainClassANN(topology, (newTrainingInputs, newTrainingTargets);
+                validationDataset = (validationInputs, validationTargets), testDataset = (testInputs, testTargets),
+                transferFunctions = transferFunctions, maxEpochs = maxEpochs, maxEpochsVal = maxEpochsVal, minLoss = minLoss,
+                learningRate = learningRate)
             else
-                ANN, _... = trainClassANN(topology, (newTrainingInputs, newTrainingTargets); transferFunctions = transferFunctions, maxEpochs = maxEpochs, minLoss = minLoss, learningRate = learningRate)
+                ann, _... = trainClassANN(topology, (newTrainingInputs, newTrainingTargets);
+                transferFunctions = transferFunctions, maxEpochs = maxEpochs, minLoss = minLoss,
+                learningRate = learningRate)
             end
-            testOutputs = ANN(testInputs')
-            accuracyExecution[execution], errorRateExecution[execution], sensitivityExecution[execution], specificityExecution[execution], ppvExecution[execution], npvExecution[execution], f1ScoreExecution[execution] = confusionMatrix(testOutputs', testTargets)
+            testOutputs = ann(testInputs')
+            accuracyExecution[execution], errorRateExecution[execution], sensitivityExecution[execution],
+            specificityExecution[execution], ppvExecution[execution], npvExecution[execution],
+            f1ScoreExecution[execution] = confusionMatrix(testOutputs', testTargets)
         end
         accuracy[fold] = mean(accuracyExecution)
         errorRate[fold] = mean(errorRateExecution)
@@ -76,6 +84,7 @@ function ANNCrossValidation(;topology::AbstractArray{<:Int,1},
         npv[fold] = mean(npvExecution)
         f1Score[fold] = mean(f1ScoreExecution)
     end
-    return ((mean(accuracy), std(accuracy)), (mean(errorRate), std(errorRate)), (mean(sensitivity), std(sensitivity)),
-    (mean(specificity), std(specificity)), (mean(ppv), std(ppv)), (mean(npv), std(npv)), (mean(f1Score), std(f1Score)))
+    return ((mean(accuracy), std(accuracy)), (mean(errorRate), std(errorRate)),
+    (mean(sensitivity), std(sensitivity)), (mean(specificity), std(specificity)),
+    (mean(ppv), std(ppv)), (mean(npv), std(npv)), (mean(f1Score), std(f1Score)))
 end;
