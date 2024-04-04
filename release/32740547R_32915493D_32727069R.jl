@@ -17,19 +17,11 @@ using Flux.Losses
 
 # Funcion para realizar la codificacion, recibe el vector de caracteristicas (uno por patron), y las clases
 function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1})
-    num_classes = length(classes)
-    num_patterns = length(feature)
-
-    if num_classes == 2
-        encoded_matrix = reshape(feature .== classes[1], :, 1)
+    if length(classes) == 2                 # Si el número de clases es mayor que 2, entonces:
+        encoded_matrix = reshape(feature .== classes[1], :, 1) # Para el caso de 2 clases, se crea un vector columna con 1 en las filas donde la característica es igual a la primera clase y 0 en las demás.
     else
-        encoded_matrix = falses(num_patterns, num_classes)
-
-        for i in 1:num_classes
-            encoded_matrix[:, i] .= feature .== classes[i]
-        end
+        encoded_matrix = transpose(feature) .== classes
     end
-
     return encoded_matrix
 end;
 # Esta funcion es similar a la anterior, pero si no es especifican las clases, se toman de la propia variable

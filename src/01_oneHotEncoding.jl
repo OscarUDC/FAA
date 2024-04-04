@@ -3,19 +3,11 @@
 
 # Funcion para realizar la codificacion, recibe el vector de caracteristicas (uno por patron), y las clases
 function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{<:Any,1})
-    num_classes = length(classes)       # Número de clases
-    num_patterns = length(feature)      # Número de caracteristicas
-
-    if num_classes == 2                 # Si el número de clases es mayor que 2, entonces:
+    if length(classes) == 2                 # Si el número de clases es mayor que 2, entonces:
         encoded_matrix = reshape(feature .== classes[1], :, 1) # Para el caso de 2 clases, se crea un vector columna con 1 en las filas donde la característica es igual a la primera clase y 0 en las demás.
     else
-        encoded_matrix = falses(num_patterns, num_classes)     # Para más de 2 clases, se crea una matriz de falsos inicialmente.
-
-        for i in 1:num_classes # Iteramos las clases
-            encoded_matrix[:, i] .= feature .== classes[i] # Si las la feature es igual a la clase entonces se asigna el valor i en la matriz
-        end
+        encoded_matrix = transpose(feature) .== classes
     end
-
     return encoded_matrix
 end;
 
