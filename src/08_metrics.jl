@@ -1,70 +1,19 @@
 #4.1 and 4.2
 using Statistics
 
-include.([
-    "04_accuracy.jl",
-    "01_oneHotEncoding.jl"
-    ])
-
 function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
     VP = sum(outputs .& targets)
     VN = sum((.!outputs) .& (.!targets))
     FP = sum(outputs .& .!targets)
     FN = sum(.!outputs .& targets)
-
-    # Precisión
-    if (VP + VN + FP + FN) == 0
-        accuracy = 0.0
-    else
-        accuracy = (VN + VP) / (VN + VP + FN + FP)
-    end
-    
-    # Tasa de error
-    if (VP + VN + FP + FN) == 0
-        error_rate = 0.0
-    else
-        error_rate = (FN + FP) / (VN + VP + FN + FP)
-    end
-    
-    # Sensibilidad (Recall)
-    if VP == 0 && FN == 0
-        sensitivity = 1.0
-    else
-        sensitivity = VP / (FN + VP)
-    end
-    
-    # Especificidad
-    if VN == 0 && FP == 0
-        specificity = 1.0
-    else
-        specificity = VN / (FP + VN)
-    end
-    
-    # Valor predictivo positivo (Precision)
-    if VP == 0 && FP == 0
-        ppv = 1.0
-    else
-        ppv = VP / (VP + FP)
-    end
-
-    # Valor predictivo negativo
-    if VN == 0 && FN == 0
-        npv = 1.0
-    else
-        npv = VN / (VN + FN)
-    end
-    
-    # F1-score
-    if sensitivity == 0 && ppv == 0
-        f1_score = 0.0
-    else
-        f1_score = 2 * (ppv * sensitivity) / (ppv + sensitivity)
-    end    
-
-    # Matriz de confusión
+    accuracy = (VP + VN + FP + FN) == 0 ? 0.0 : (VN + VP) / (VP + VN + FP + FN)
+    error_rate = (VP + VN + FP + FN) == 0 ? 0.0 : (FN + FP) / (VP + VN + FP + FN)
+    sensitivity = (VP + FN) == 0 ? 1.0 : VP / (FN + VP)
+    specificity = (VN + FP) == 0 ? 1.0 : VN / (FP + VN)
+    ppv = (VP + FP) == 0 ? 1.0 : VP / (VP + FP)
+    npv = (VN + FN) == 0 ? 1.0 : VN / (VN + FN)
+    f1_score = (sensitivity + ppv) == 0 ? 0.0 : 2 * (ppv * sensitivity) / (ppv + sensitivity)
     confusion_matrix = [VN FP; FN VP]
-
-    # Devolvemos la tupla con todas las métricas y la matriz de confusión
     return (accuracy, error_rate, sensitivity, specificity, ppv, npv, f1_score, confusion_matrix)
 end;
 
@@ -72,8 +21,6 @@ function confusionMatrix(outputs::AbstractArray{<:Real,1}, targets::AbstractArra
     binary_outputs = outputs .≥ threshold
     return confusionMatrix(binary_outputs, targets)
 end;
-
-
 
 function printConfusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{Bool,1})
     results = confusionMatrix(outputs, targets)
@@ -93,92 +40,6 @@ function printConfusionMatrix(outputs::AbstractArray{<:Real,1}, targets::Abstrac
     binary_outputs = outputs .≥ threshold #? Si el número de outpost es mayor que el umbral, hacemos un print de la matriz de confusión
     printConfusionMatrix(binary_outputs, targets)
 end;
-
-
-# # Caso 1: Clasificación correcta
-# outputs_correctos = [true, false, true, false, true]
-# targets_correctos = [true, false, true, false, true]
-
-# # Caso 2: Todos clasificados como positivos
-# outputs_todos_positivos = [true, true, true, true, true]
-# targets_todos_positivos = [true, false, true, false, true]
-
-# # Caso 3: Todos clasificados como negativos
-# outputs_todos_negativos = [false, false, false, false, false]
-# targets_todos_negativos = [true, false, true, false, true]
-
-# # Caso 4: Todos patrones positivos y clasificados como positivos
-# outputs_patrones_positivos = [true, true, true, true, true]
-# targets_patrones_positivos = [true, true, true, true, true]
-
-# # Caso 5: Todos patrones negativos y clasificados como negativos
-# outputs_patrones_negativos = [false, false, false, false, false]
-# targets_patrones_negativos = [false, false, false, false, false]
-
-# # Llamadas a la función confusionMatrix
-# resultados_caso1 = confusionMatrix(outputs_correctos, targets_correctos)
-# resultados_caso2 = confusionMatrix(outputs_todos_positivos, targets_todos_positivos)
-# resultados_caso3 = confusionMatrix(outputs_todos_negativos, targets_todos_negativos)
-# resultados_caso4 = confusionMatrix(outputs_patrones_positivos, targets_patrones_positivos)
-# resultados_caso5 = confusionMatrix(outputs_patrones_negativos, targets_patrones_negativos)
-
-# # Imprimir resultados
-# println("Caso 1:")
-# println("Precisión (accuracy): ", resultados_caso1[1])
-# println("Tasa de error (error rate): ", resultados_caso1[2])
-# println("Sensibilidad (recall): ", resultados_caso1[3])
-# println("Especificidad (specificity): ", resultados_caso1[4])
-# println("Valor predictivo positivo (precision): ", resultados_caso1[5])
-# println("Valor predictivo negativo: ", resultados_caso1[6])
-# println("F1-Score: ", resultados_caso1[7])
-# println("Matriz de confusión:")
-# println(resultados_caso1[8])
-
-# println("\nCaso 2:")
-# println("Precisión (accuracy): ", resultados_caso2[1])
-# println("Tasa de error (error rate): ", resultados_caso2[2])
-# println("Sensibilidad (recall): ", resultados_caso2[3])
-# println("Especificidad (specificity): ", resultados_caso2[4])
-# println("Valor predictivo positivo (precision): ", resultados_caso2[5])
-# println("Valor predictivo negativo: ", resultados_caso2[6])
-# println("F1-Score: ", resultados_caso2[7])
-# println("Matriz de confusión:")
-# println(resultados_caso2[8])
-
-# println("\nCaso 3:")
-# println("Precisión (accuracy): ", resultados_caso3[1])
-# println("Tasa de error (error rate): ", resultados_caso3[2])
-# println("Sensibilidad (recall): ", resultados_caso3[3])
-# println("Especificidad (specificity): ", resultados_caso3[4])
-# println("Valor predictivo positivo (precision): ", resultados_caso3[5])
-# println("Valor predictivo negativo: ", resultados_caso3[6])
-# println("F1-Score: ", resultados_caso3[7])
-# println("Matriz de confusión:")
-# println(resultados_caso3[8])
-
-# println("\nCaso 4:")
-# println("Precisión (accuracy): ", resultados_caso4[1])
-# println("Tasa de error (error rate): ", resultados_caso4[2])
-# println("Sensibilidad (recall): ", resultados_caso4[3])
-# println("Especificidad (specificity): ", resultados_caso4[4])
-# println("Valor predictivo positivo (precision): ", resultados_caso4[5])
-# println("Valor predictivo negativo: ", resultados_caso4[6])
-# println("F1-Score: ", resultados_caso4[7])
-# println("Matriz de confusión:")
-# println(resultados_caso4[8])
-
-# println("\nCaso 5:")
-# println("Precisión (accuracy): ", resultados_caso5[1])
-# println("Tasa de error (error rate): ", resultados_caso5[2])
-# println("Sensibilidad (recall): ", resultados_caso5[3])
-# println("Especificidad (specificity): ", resultados_caso5[4])
-# println("Valor predictivo positivo (precision): ", resultados_caso5[5])
-# println("Valor predictivo negativo: ", resultados_caso5[6])
-# println("F1-Score: ", resultados_caso5[7])
-# println("Matriz de confusión:")
-# println(resultados_caso5[8])
-
-#-----------------------------------------------
 
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
     n_patterns, n_classes = size(outputs)  # Obtener las dimensiones de las matrices
@@ -247,7 +108,6 @@ end;
 
 # Definir función confusionMatrix para matrices de valores reales
 function confusionMatrix(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
-    # Convertir outputs a valores booleanos si es necesario
     outputs_bool = classifyOutputs(outputs)
     return confusionMatrix(outputs_bool, targets; weighted=weighted)
 end;

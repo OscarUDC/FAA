@@ -385,59 +385,14 @@ function confusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractArray{
     VN = sum((.!outputs) .& (.!targets))
     FP = sum(outputs .& .!targets)
     FN = sum(.!outputs .& targets)
-
-    # Precisión
-    if (VP + VN + FP + FN) == 0
-        accuracy = 0.0
-    else
-        accuracy = (VN + VP) / (VN + VP + FN + FP)
-    end
-    
-    # Tasa de error
-    if (VP + VN + FP + FN) == 0
-        error_rate = 0.0
-    else
-        error_rate = (FN + FP) / (VN + VP + FN + FP)
-    end
-    
-    # Sensibilidad (Recall)
-    if VP == 0 && FN == 0
-        sensitivity = 1.0
-    else
-        sensitivity = VP / (FN + VP)
-    end
-    
-    # Especificidad
-    if VN == 0 && FP == 0
-        specificity = 1.0
-    else
-        specificity = VN / (FP + VN)
-    end
-    
-    # Valor predictivo positivo (Precision)
-    if VP == 0 && FP == 0
-        ppv = 1.0
-    else
-        ppv = VP / (VP + FP)
-    end
-
-    # Valor predictivo negativo
-    if VN == 0 && FN == 0
-        npv = 1.0
-    else
-        npv = VN / (VN + FN)
-    end
-    
-    # F1-score
-    if sensitivity == 0 && ppv == 0
-        f1_score = 0.0
-    else
-        f1_score = 2 * (ppv * sensitivity) / (ppv + sensitivity)
-    end    
-
-    # Matriz de confusión
+    accuracy = (VP + VN + FP + FN) == 0 ? 0.0 : (VN + VP) / (VP + VN + FP + FN)
+    error_rate = (VP + VN + FP + FN) == 0 ? 0.0 : (FN + FP) / (VP + VN + FP + FN)
+    sensitivity = (VP + FN) == 0 ? 1.0 : VP / (FN + VP)
+    specificity = (VN + FP) == 0 ? 1.0 : VN / (FP + VN)
+    ppv = (VP + FP) == 0 ? 1.0 : VP / (VP + FP)
+    npv = (VN + FN) == 0 ? 1.0 : VN / (VN + FN)
+    f1_score = (sensitivity + ppv) == 0 ? 0.0 : 2 * (ppv * sensitivity) / (ppv + sensitivity)
     confusion_matrix = [VN FP; FN VP]
-
     return (accuracy, error_rate, sensitivity, specificity, ppv, npv, f1_score, confusion_matrix)
 end;
 
