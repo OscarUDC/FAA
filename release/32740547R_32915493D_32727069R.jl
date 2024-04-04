@@ -197,7 +197,8 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     inputsT = Float32.(inputsT)
     targetsT = Float32.(targetsT)
 
-    ann = buildClassANN(Int64(size(inputs, 1)), topology, Int64(size(targets, 1)))
+    ann = buildClassANN(Int64(size(inputs, 1)), topology, Int64(size(targets, 1));
+    transferFunctions = transferFunctions)
     loss(model, inputs, targets) = size(targets,1)==1 ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
 
     opt = Flux.setup(Adam(learningRate), ann)
@@ -426,7 +427,7 @@ end;
 
 
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
-    n_patterns, n_classes = size(outputs)  # Obtener las dimensiones de las matrices
+    _, n_classes = size(outputs)  # Obtener las dimensiones de las matrices
     if n_classes != size(targets, 2)  # Verificar si el número de columnas es diferente en las matrices outputs y targets
         error("Number of columns in outputs and targets matrices must be equal")
     end
@@ -434,11 +435,6 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     if n_classes == 1  # Si solo hay una clase, llamar a la función anterior
         return confusionMatrix(outputs[:, 1], targets[:, 1]; weighted=weighted)
     end
-
-    if n_classes == 2  # Comprobar si el número de clases es igual a 2
-        error("Invalid input dimensions")
-    end
-
     # Inicializar vectores de métricas con ceros
     sensitivity = zeros(Float64, n_classes)
     specificity = zeros(Float64, n_classes)
@@ -447,9 +443,15 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     F1 = zeros(Float64, n_classes)
 
     # Calcular matriz de confusión(sin necesidad de inicializarla primero con ceros)
-    confusion_matrix = [sum(outputs[:, j] .& targets[:, i]) for i in 1:n_classes, j in 1:n_classes] #Hacemos un doble bucle para rellenar la matriz con ceros de primeras, con el fin de reservar los huecos en memoria
+    _, _, sensitivity[i], specificity[i], VPP[i], VPN[i], F1[i], _ = [sum(outputs[:, i] .& targets[:, i]) for i in axes(outputs, 2)] #Hacemos un bucle para rellenar la matriz con ceros de primeras, con el fin de reservar los huecos en memoria
 
     # Calcular métricas macro o weighted
+    confusionMatrix = zeros(n_classes, n_classes)
+    for row in eachindex(outputs, 1)
+        f = findfirst(targets[row, :])
+        c = findfirst(outputs[row, :])
+        confusionMatrix[f, c] += 1
+    end
     if weighted
         weights = sum(targets, dims=1)
         TP = sum(outputs .& targets, dims=1)
@@ -689,49 +691,49 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict,
         learningRate = modelHyperparameters["learningRate"], validationRatio = modelHyperparameters["validationRatio"],
         maxEpochsVal = modelHyperparameters["maxEpochsVal"])
     end 
-    processedInputs = normalizeZeroMean(inputs)
     processedTargets = string.(targets)
-    if modelType == :SVC
-        if !haskey(modelHyperparameters, "kernel")
-            modelHyperparameters["kernel"] = "rbf"
-        end
-        if !haskey(modelHyperparameters, "degree")
-            modelHyperparameters["degree"] = 3
-        end
-        if !haskey(modelHyperparameters, "gamma")
-            modelHyperparameters["gamma"] = "scale"
-        end
-        if !haskey(modelHyperparameters, "coef0")
-            modelHyperparameters["coef0"] = 0.0
-        end
-        model = SVC(C = modelHyperparameters["C"], kernel = modelHyperparameters["kernel"],
-        degree = modelHyperparameters["degree"], gamma = modelHyperparameters["gamma"],
-        coef0 = modelHyperparameters["coef0"])
-    elseif modelType == :DecisionTreeClassifier
-        if !haskey(modelHyperparameters, "max_depth")
-            modelHyperparameters["max_depth"] = nothing
-        end
-        model = DecisionTreeClassifier(max_depth = modelHyperparameters["max_depth"], random_state = 1)
-    elseif modelType == :KNeighborsClassifier
-        if !haskey(modelHyperparameters, "n_neighbors")
-            modelHyperparameters["n_neighbors"] = 5
-        end
-        model = KNeighborsClassifier(n_neighbors = modelHyperparameters["n_neighbors"])
-    else
-        throw(ArgumentError("Model type $modelType does not exist or is not allowed"))
-    end
     numFolds = maximum(crossValidationIndices)
     (accuracy, errorRate, sensitivity, specificity, ppv, npv, f1Score) = (Vector{Float64}(undef, numFolds) for _ in 1:7)
     for fold in 1:numFolds
-        trainingInputs = processedInputs[crossValidationIndices .!= fold, :]
+        trainingInputs = inputs[crossValidationIndices .!= fold, :]
         trainingTargets = processedTargets[crossValidationIndices .!= fold, :]
-        testInputs = processedInputs[crossValidationIndices .== fold, :]
+        testInputs = inputs[crossValidationIndices .== fold, :]
         testTargets = processedTargets[crossValidationIndices .== fold, :]
+        if modelType == :SVC
+            if !haskey(modelHyperparameters, "kernel")
+                modelHyperparameters["kernel"] = "rbf"
+            end
+            if !haskey(modelHyperparameters, "degree")
+                modelHyperparameters["degree"] = 3
+            end
+            if !haskey(modelHyperparameters, "gamma")
+                modelHyperparameters["gamma"] = "scale"
+            end
+            if !haskey(modelHyperparameters, "coef0")
+                modelHyperparameters["coef0"] = 0.0
+            end
+            model = SVC(C = modelHyperparameters["C"], kernel = modelHyperparameters["kernel"],
+            degree = modelHyperparameters["degree"], gamma = modelHyperparameters["gamma"],
+            coef0 = modelHyperparameters["coef0"])
+        elseif modelType == :DecisionTreeClassifier
+            if !haskey(modelHyperparameters, "max_depth")
+                modelHyperparameters["max_depth"] = nothing
+            end
+            model = DecisionTreeClassifier(max_depth = modelHyperparameters["max_depth"], random_state = 1)
+        elseif modelType == :KNeighborsClassifier
+            if !haskey(modelHyperparameters, "n_neighbors")
+                modelHyperparameters["n_neighbors"] = 5
+            end
+            model = KNeighborsClassifier(n_neighbors = modelHyperparameters["n_neighbors"])
+        else
+            throw(ArgumentError("Model type $modelType does not exist or is not allowed"))
+        end
         trainedModel = fit!(model, trainingInputs, trainingTargets)
         testOutputs = predict(trainedModel, testInputs)
         accuracy[fold], errorRate[fold], sensitivity[fold], specificity[fold],
         ppv[fold], npv[fold], f1Score[fold] = confusionMatrix(testOutputs, testTargets)
     end
-    return ((mean(accuracy), std(accuracy)), (mean(errorRate), std(errorRate)), (mean(sensitivity), std(sensitivity)),
-    (mean(specificity), std(specificity)), (mean(ppv), std(ppv)), (mean(npv), std(npv)), (mean(f1Score), std(f1Score)))
+    return ((mean(accuracy), std(accuracy)), (mean(errorRate), std(errorRate)), (mean(sensitivity),
+    std(sensitivity)), (mean(specificity), std(specificity)), (mean(ppv), std(ppv)), (mean(npv), std(npv)),
+    (mean(f1Score), std(f1Score)))
 end;
