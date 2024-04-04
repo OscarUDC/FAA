@@ -443,7 +443,7 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     F1 = zeros(Float64, n_classes)
 
     # Calcular matriz de confusión(sin necesidad de inicializarla primero con ceros)
-    _, _, sensitivity[i], specificity[i], VPP[i], VPN[i], F1[i], _ = [sum(outputs[:, i] .& targets[:, i]) for i in axes(outputs, 2)]
+    _, _, sensitivity[class], specificity[class], VPP[class], VPN[class], F1[class], _ = [confusionMatrix(outputs[:, class], targets[:, class]) for class in axes(targets, 2)]
 
     accuracy = accuracy(outputs, targets)
     confusionMatrix = zeros(n_classes, n_classes)
