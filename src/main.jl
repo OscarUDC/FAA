@@ -81,3 +81,110 @@ tupla = holdOut(100, 0.15, 0.15)
 println()
 println(isa(tupla, Tuple))
 println(length(tupla[1])/100, "\n", length(tupla[2])/100, "\n", length(tupla[3])/100)
+
+# confusionMatrix
+
+# Test 1: Matrices booleanas multiclase
+outputs_bool = rand(Bool, 100, 5)
+targets_bool = rand(Bool, 100, 5)
+
+# Imprimir las matrices de confusión
+printConfusionMatrix(outputs_bool, targets_bool)
+
+# Test 2: Matrices reales multiclase
+outputs_real = rand(100, 5)
+targets_bool = rand(Bool, 100, 5)
+
+# Imprimir las matrices de confusión
+printConfusionMatrix(outputs_real, targets_bool)
+
+# Test 3: Vectores de tipo Any multiclase
+outputs_any = ["class1", "class2", "class3", "class1", "class2", "class3"]
+targets_any = ["class1", "class2", "class3", "class1", "class2", "class3"]
+
+# Imprimir las matrices de confusión
+printConfusionMatrix(outputs_any, targets_any)
+
+
+
+
+# Matriz de salidas balanceada
+outputs_balanced = [
+    1 0 0 0 0;
+    0 1 0 0 0;
+    0 0 1 0 0;
+    0 0 0 1 0;
+    0 0 0 0 1
+]
+
+# Matriz de salidas desbalanceada
+outputs_imbalanced = [
+    1 0 0 0 0;
+    1 0 0 0 0;
+    1 0 0 0 0;
+    1 0 0 0 0;
+    1 0 0 0 0
+]
+
+# Matriz de salidas aleatorias (seleccionando una clase más probable)
+outputs_random = [
+    1 0 0 0 0;
+    0 1 0 0 0;
+    0 0 1 0 0;
+    0 1 0 0 0;
+    0 0 0 0 1
+]
+
+# Matriz de salidas aleatorias desbalanceada (seleccionando una clase menos probable)
+outputs_random_imbalanced = [
+    1 0 0 0 0;
+    1 0 0 0 0;
+    1 0 0 0 0;
+    2 0 0 0 0;
+    1 0 0 0 0
+]
+
+# Matriz de salidas aleatorias (seleccionando una clase más probable)
+outputs_random = [
+    1 0 0 0 0;
+    0 1 0 0 0;
+    0 0 1 0 0;
+    0 1 0 0 0;
+    0 0 0 0 1
+]
+
+# Matriz de salidas aleatorias desbalanceada (seleccionando una clase menos probable)
+outputs_random_imbalanced = [
+    1 0 0 0 0;
+    1 0 0 0 0;
+    1 0 0 0 0;
+    2 0 0 0 0;
+    1 0 0 0 0
+]
+
+# Matriz de salidas aleatorias (seleccionando una clase más probable)
+outputs_random = [
+    1 0 0 0 0;
+    0 1 0 0 0;
+    0 0 1 0 0;
+    0 1 0 0 0;
+    0 0 0 0 1
+]
+
+# Matriz de salidas aleatorias desbalanceada (seleccionando una clase menos probable)
+outputs_random_imbalanced = [
+    1 0 0 0 0;
+    1 0 0 0 0;
+    1 0 0 0 0;
+    2 0 0 0 0;
+    1 0 0 0 0
+]
+
+# Test 1: Matrices booleanas multiclase
+targets_bool = rand(Bool, 5, 5)
+
+# Imprimir las matrices de confusión sin ponderación
+printConfusionMatrix(outputs_balanced, targets_bool, weighted=false)
+
+# Imprimir las matrices de confusión con ponderación
+printConfusionMatrix(outputs_balanced, targets_bool, weighted=true)
