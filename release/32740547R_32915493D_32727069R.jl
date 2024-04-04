@@ -408,7 +408,7 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     end
     acc = accuracy(outputs, targets)
     confusion_matrix = zeros(n_classes, n_classes)
-    for row in 1:size(outputs, 1)
+    for row in eachindex(outputs)
         realClass = findfirst(targets[row, :])
         predictedClass = findfirst(outputs[row, :])
         confusion_matrix[realClass, predictedClass] += 1
