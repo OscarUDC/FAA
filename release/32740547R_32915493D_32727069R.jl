@@ -443,53 +443,26 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     F1 = zeros(Float64, n_classes)
 
     # Calcular matriz de confusión(sin necesidad de inicializarla primero con ceros)
-    _, _, sensitivity[i], specificity[i], VPP[i], VPN[i], F1[i], _ = [sum(outputs[:, i] .& targets[:, i]) for i in axes(outputs, 2)] #Hacemos un bucle para rellenar la matriz con ceros de primeras, con el fin de reservar los huecos en memoria
+    _, _, sensitivity[i], specificity[i], VPP[i], VPN[i], F1[i], _ = [sum(outputs[:, i] .& targets[:, i]) for i in axes(outputs, 2)]
 
-    # Calcular métricas macro o weighted
+    accuracy = accuracy(outputs, targets)
     confusionMatrix = zeros(n_classes, n_classes)
     for row in eachindex(outputs, 1)
-        f = findfirst(targets[row, :])
-        c = findfirst(outputs[row, :])
-        confusionMatrix[f, c] += 1
+        realClass = findfirst(targets[row, :])
+        predictedClass = findfirst(outputs[row, :])
+        confusionMatrix[realClass, predictedClass] += 1
     end
-    if weighted
-        weights = sum(targets, dims=1)
-        TP = sum(outputs .& targets, dims=1)
-        TN = sum((.!outputs) .& (.!targets), dims=1)
-        FP = sum(outputs .& .!targets, dims=1)
-        FN = sum(.!outputs .& targets, dims=1)
-
-        accuracy = sum(TP ./ (TP .+ FP) .* weights) / sum(weights)
-        error_rate = 1 - accuracy
-        sensitivity = sum(TP ./ (TP .+ FN) .* weights) / sum(weights)
-        specificity = sum(TN ./ (TN .+ FP) .* weights) / sum(weights)
-        VPP = sensitivity  # Same as sensitivity for multiclass
-        VPN = specificity  # Same as specificity for multiclass
-        F1 = 2 * sensitivity * accuracy / (sensitivity + accuracy)
-
+    if !weighted
+        return(accuracy, 1 - accuracy, mean(sensitivity), mean(specificity), mean(VPP), mean(VPN), mean(F1), confusionMatrix)
     else
-        TP = sum(outputs .& targets, dims=1)
-        TN = sum((.!outputs) .& (.!targets), dims=1)
-        FP = sum(outputs .& .!targets, dims=1)
-        FN = sum(.!outputs .& targets, dims=1)
-
-        accuracy = sum(TP ./ (TP .+ FP)) / n_classes
-        error_rate = 1 - accuracy
-        sensitivity = sum(TP ./ (TP .+ FN)) / n_classes
-        specificity = sum(TN ./ (TN .+ FP)) / n_classes
-        VPP = sensitivity  # Same as sensitivity for multiclass
-        VPN = specificity  # Same as specificity for multiclass
-        F1 = 2 * sensitivity * accuracy / (sensitivity + accuracy) / n_classes
+        ponderation = sum(confusionMatrix, dims = 2) / size(targets, 1)
+        sensitivity *= ponderation
+        specificity *= ponderation
+        VPP *= ponderation
+        VPN *= ponderation
+        F1 *= ponderation
+    return (accuracy, error_rate, sum(sensitivity), sum(specificity), sum(VPP), sum(VPN), sum(F1), confusion_matrix)
     end
-
-    # Unir los valores de métricas para cada clase en un único valor usando la estrategia macro o weighted
-    sensitivity = weighted ? sensitivity : mean(sensitivity)
-    specificity = weighted ? specificity : mean(specificity)
-    VPP = weighted ? VPP : mean(VPP)
-    VPN = weighted ? VPN : mean(VPN)
-    F1 = weighted ? F1 : mean(F1)
-
-    return (accuracy, error_rate, sensitivity, specificity, VPP, VPN, F1, confusion_matrix)
 end;
 
 # Definir función confusionMatrix para matrices de valores reales
