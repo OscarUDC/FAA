@@ -166,11 +166,11 @@ end;
 function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
     ann = Chain()  # Inicializa la red neuronal
     # Agrega las capas intermedias
-    for i in eachindex(topology)
-        if i == 1
-            ann = Chain(ann..., Dense(numInputs, topology[i], transferFunctions[i]))
+    for index in eachindex(topology)
+        if index == 1
+            ann = Chain(ann..., Dense(numInputs, topology[index], transferFunctions[index]))
         else
-            ann = Chain(ann..., Dense(topology[i-1], topology[i], transferFunctions[i]))
+            ann = Chain(ann..., Dense(topology[index - 1], topology[index], transferFunctions[index]))
         end
     end
     # Agrega la capa de salida
@@ -408,7 +408,7 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     end
     acc = accuracy(outputs, targets)
     confusion_matrix = zeros(n_classes, n_classes)
-    for row in eachindex(outputs)
+    for row in axes(outputs, 1)
         realClass = findfirst(targets[row, :])
         predictedClass = findfirst(outputs[row, :])
         confusion_matrix[realClass, predictedClass] += 1

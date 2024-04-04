@@ -16,11 +16,11 @@ function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutp
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
     
     ann = Chain()
-    for i in eachindex(topology)
-        if i == 1
-            ann = Chain(ann..., Dense(numInputs, topology[i], transferFunctions[i]))
+    for index in eachindex(topology)
+        if index == 1
+            ann = Chain(ann..., Dense(numInputs, topology[index], transferFunctions[index]))
         else
-            ann = Chain(ann..., Dense(topology[i-1], topology[i], transferFunctions[i]))
+            ann = Chain(ann..., Dense(topology[index - 1], topology[index], transferFunctions[index]))
         end
     end
     if numOutputs > 2
