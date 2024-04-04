@@ -6,7 +6,7 @@ function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{
     if length(classes) == 2                 # Si el número de clases es mayor que 2, entonces:
         encoded_matrix = reshape(feature .== classes[1], :, 1) # Para el caso de 2 clases, se crea un vector columna con 1 en las filas donde la característica es igual a la primera clase y 0 en las demás.
     else
-        encoded_matrix = transpose(feature) .== classes
+        encoded_matrix = permutedims(classes) .== feature
     end
     return encoded_matrix
 end;

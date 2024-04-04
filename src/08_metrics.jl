@@ -37,9 +37,14 @@ function printConfusionMatrix(outputs::AbstractArray{Bool,1}, targets::AbstractA
 end;
 
 function printConfusionMatrix(outputs::AbstractArray{<:Real,1}, targets::AbstractArray{Bool,1}; threshold::Real=0.5)
-    binary_outputs = outputs .≥ threshold #? Si el número de outpost es mayor que el umbral, hacemos un print de la matriz de confusión
+    binary_outputs = outputs .≥ threshold
     printConfusionMatrix(binary_outputs, targets)
 end;
+
+
+
+# Clasificación multiclase:
+
 
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
     _, n_classes = size(outputs)  # Obtener las dimensiones de las matrices
@@ -56,28 +61,36 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     VPP = zeros(Float64, n_classes)
     VPN = zeros(Float64, n_classes)
     F1 = zeros(Float64, n_classes)
-
     # Calcular matriz de confusión(sin necesidad de inicializarla primero con ceros)
-    _, _, sensitivity[class], specificity[class], VPP[class], VPN[class], F1[class], _ = [confusionMatrix(outputs[:, class], targets[:, class]) for class in axes(targets, 2)]
-
-    accuracy = accuracy(outputs, targets)
-    confusionMatrix = zeros(n_classes, n_classes)
-    for row in eachindex(outputs, 1)
+    for class in axes(outputs, 2)
+        _, _, sensitivity[class], specificity[class], VPP[class], VPN[class], F1[class], _ =
+        confusionMatrix(outputs[:, class], targets[:, class])
+    end
+    acc = accuracy(outputs, targets)
+    confusion_matrix = zeros(n_classes, n_classes)
+    for row in 1:size(outputs, 1)
         realClass = findfirst(targets[row, :])
         predictedClass = findfirst(outputs[row, :])
-        confusionMatrix[realClass, predictedClass] += 1
+        confusion_matrix[realClass, predictedClass] += 1
     end
     if !weighted
-        return(accuracy, 1 - accuracy, mean(sensitivity), mean(specificity), mean(VPP), mean(VPN), mean(F1), confusionMatrix)
+        return(acc, 1 - acc, mean(sensitivity), mean(specificity), mean(VPP), mean(VPN), mean(F1), confusion_matrix)
     else
-        ponderation = sum(confusionMatrix, dims = 2) / size(targets, 1)
-        sensitivity *= ponderation
-        specificity *= ponderation
-        VPP *= ponderation
-        VPN *= ponderation
-        F1 *= ponderation
-    return (accuracy, error_rate, sum(sensitivity), sum(specificity), sum(VPP), sum(VPN), sum(F1), confusion_matrix)
+        ponderation = sum(confusion_matrix, dims = 2) ./ size(targets, 1)
+        sensitivity .*= ponderation
+        specificity .*= ponderation
+        VPP .*= ponderation
+        VPN .*= ponderation
+        F1 .*= ponderation
+    return (acc, 1 - acc, sum(sensitivity), sum(specificity), sum(VPP), sum(VPN), sum(F1), confusion_matrix)
     end
+end;
+
+# Definir función confusionMatrix para matrices de valores reales
+function confusionMatrix(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
+    # Convertir outputs a valores booleanos si es necesario
+    outputs_bool = classifyOutputs(outputs)
+    return confusionMatrix(outputs_bool, targets; weighted=weighted)
 end;
 
 # Definir función confusionMatrix para vectores de cualquier tipo
@@ -93,48 +106,40 @@ function confusionMatrix(outputs::AbstractArray{<:Any,1}, targets::AbstractArray
     return confusionMatrix(outputs_onehot, targets_onehot; weighted=weighted)
 end;
 
-
+# Función para imprimir la matriz de confusión
 function printConfusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
-    metrics = confusionMatrix(outputs, targets; weighted=weighted)
-    println("Metrics:")
-    println("Precision: ", metrics[1])
-    println("Error rate: ", metrics[2])
-    println("Sensitivity: ", metrics[3])
-    println("Specificity: ", metrics[4])
-    println("VPP: ", metrics[5])
-    println("VPN: ", metrics[6])
-    println("F1: ", metrics[7])
-    println("Confusion matrix:")
-    println(metrics[8])
-    return metrics
-end
+    # Calcular la matriz de confusión
+    confusion_matrix = confusionMatrix(outputs, targets; weighted=weighted)[end]
+    
+    # Imprimir la matriz de confusión
+    println("Confusion Matrix:")
+    for i in axes(confusion_matrix, 1)
+        println(confusion_matrix[i, :])
+    end
+end;
 
+# Función para imprimir la matriz de confusión con entradas de tipo AbstractArray{<:Real,2}
 function printConfusionMatrix(outputs::AbstractArray{<:Real,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
-    outputs_bool = classifyOutputs(outputs)
-    return printConfusionMatrix(outputs_bool, targets; weighted=weighted)
-end
+    # Calcular la matriz de confusión
+    confusion_matrix = confusionMatrix(outputs, targets; weighted=weighted)[end]
+    
+    # Imprimir la matriz de confusión
+    println("Confusion Matrix:")
+    for i in axes(confusion_matrix, 1)
+        println(confusion_matrix[i, :])
+    end
+end;
 
+# Función para imprimir la matriz de confusión con entradas de tipo AbstractArray{<:Any,1}
 function printConfusionMatrix(outputs::AbstractArray{<:Any,1}, targets::AbstractArray{<:Any,1}; weighted::Bool=true)
-    # Asegurar que todos los elementos de outputs estén presentes en targets
-    @assert all([in(output, unique(targets)) for output in outputs]) "All elements of outputs must be present in targets"
+    # Calcular la matriz de confusión
+    confusion_matrix = confusionMatrix(outputs, targets; weighted=weighted)[end]
     
-    # Convertir los vectores targets y outputs a matrices one-hot
-    targets_onehot = oneHotEncoding(targets)
-    outputs_onehot = oneHotEncoding(outputs)
-    
-    # Llamar a la función confusionMatrix con las matrices one-hot
-    metrics = confusionMatrix(outputs_onehot, targets_onehot; weighted=weighted)
-    println("Metrics:")
-    println("Precision: ", metrics[1])
-    println("Error rate: ", metrics[2])
-    println("Sensitivity: ", metrics[3])
-    println("Specificity: ", metrics[4])
-    println("VPP: ", metrics[5])
-    println("VPN: ", metrics[6])
-    println("F1: ", metrics[7])
-    println("Confusion matrix:")
-    println(metrics[8])
-    return metrics
+    # Imprimir la matriz de confusión
+    println("Confusion Matrix:")
+    for i in axes(confusion_matrix, 1)
+        println(confusion_matrix[i, :])
+    end
 end;
 
 

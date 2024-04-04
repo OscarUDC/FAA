@@ -20,7 +20,7 @@ function oneHotEncoding(feature::AbstractArray{<:Any,1}, classes::AbstractArray{
     if length(classes) == 2                 # Si el número de clases es mayor que 2, entonces:
         encoded_matrix = reshape(feature .== classes[1], :, 1) # Para el caso de 2 clases, se crea un vector columna con 1 en las filas donde la característica es igual a la primera clase y 0 en las demás.
     else
-        encoded_matrix = transpose(feature) .== classes
+        encoded_matrix = permutedims(classes) .== feature
     end
     return encoded_matrix
 end;
@@ -441,27 +441,28 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     VPP = zeros(Float64, n_classes)
     VPN = zeros(Float64, n_classes)
     F1 = zeros(Float64, n_classes)
-
     # Calcular matriz de confusión(sin necesidad de inicializarla primero con ceros)
-    _, _, sensitivity[class], specificity[class], VPP[class], VPN[class], F1[class], _ = [confusionMatrix(outputs[:, class], targets[:, class]) for class in axes(targets, 2)]
-
-    accuracy = accuracy(outputs, targets)
-    confusionMatrix = zeros(n_classes, n_classes)
-    for row in eachindex(outputs, 1)
+    for class in axes(outputs, 2)
+        _, _, sensitivity[class], specificity[class], VPP[class], VPN[class], F1[class], _ =
+        confusionMatrix(outputs[:, class], targets[:, class])
+    end
+    acc = accuracy(outputs, targets)
+    confusion_matrix = zeros(n_classes, n_classes)
+    for row in 1:size(outputs, 1)
         realClass = findfirst(targets[row, :])
         predictedClass = findfirst(outputs[row, :])
-        confusionMatrix[realClass, predictedClass] += 1
+        confusion_matrix[realClass, predictedClass] += 1
     end
     if !weighted
-        return(accuracy, 1 - accuracy, mean(sensitivity), mean(specificity), mean(VPP), mean(VPN), mean(F1), confusionMatrix)
+        return(acc, 1 - acc, mean(sensitivity), mean(specificity), mean(VPP), mean(VPN), mean(F1), confusion_matrix)
     else
-        ponderation = sum(confusionMatrix, dims = 2) / size(targets, 1)
-        sensitivity *= ponderation
-        specificity *= ponderation
-        VPP *= ponderation
-        VPN *= ponderation
-        F1 *= ponderation
-    return (accuracy, error_rate, sum(sensitivity), sum(specificity), sum(VPP), sum(VPN), sum(F1), confusion_matrix)
+        ponderation = sum(confusion_matrix, dims = 2) ./ size(targets, 1)
+        sensitivity .*= ponderation
+        specificity .*= ponderation
+        VPP .*= ponderation
+        VPN .*= ponderation
+        F1 .*= ponderation
+    return (acc, 1 - acc, sum(sensitivity), sum(specificity), sum(VPP), sum(VPN), sum(F1), confusion_matrix)
     end
 end;
 
