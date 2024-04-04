@@ -193,7 +193,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     ann = buildClassANN(Int64(size(inputs, 1)), topology, Int64(size(targets, 1));
     transferFunctions = transferFunctions)
     loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y)
-    opt = Flux.setup(Adam(learningRate), ann) 
+    opt = Adam(learningRate), ann 
     for _ in 1:maxEpochs
         Flux.train!(loss, ann, [(inputs', targets')], opt)
         if loss(ann, inputs', targets') <= minLoss
@@ -268,7 +268,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     ann = buildClassANN(Int64(size(trainingInputs, 1)),topology, Int64(size(trainingTargets, 1));
     transferFunctions = transferFunctions)
     loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y)
-    opt = Flux.setup(Adam(learningRate), ann)
+    opt = Adam(learningRate), ann
 
     trainingLossHistory = Float32[]
     testLossHistory = Float32[]
@@ -280,7 +280,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     epoch = 0
     trainingLoss = minLoss + 1
     while !(epoch == maxEpochs) || !(epochs == maxEpochsVal) || !(trainingLoss <= minLoss)
-        Flux.train!(loss, Flux.params(ann), [(trainingInputs', trainingTargets')], opt)
+        Flux.train!(loss, ann, [(trainingInputs', trainingTargets')], opt)
         trainingLoss = loss(ann, trainingInputs', trainingTargets')
         push!(trainingLossHistory, loss(ann, trainingInputs', trainingTargets'))
         if existsTestDataset
@@ -630,9 +630,9 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict,
     (accuracy, errorRate, sensitivity, specificity, ppv, npv, f1Score) = (Vector{Float64}(undef, numFolds) for _ in 1:7)
     for fold in 1:numFolds
         trainingInputs = inputs[crossValidationIndices .!= fold, :]
-        trainingTargets = processedTargets[crossValidationIndices .!= fold, :]
+        trainingTargets = processedTargets[crossValidationIndices .!= fold]
         testInputs = inputs[crossValidationIndices .== fold, :]
-        testTargets = processedTargets[crossValidationIndices .== fold, :]
+        testTargets = processedTargets[crossValidationIndices .== fold]
         if modelType == :SVC
             if !haskey(modelHyperparameters, "kernel")
                 modelHyperparameters["kernel"] = "rbf"
