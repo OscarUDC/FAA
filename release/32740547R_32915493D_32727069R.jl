@@ -188,15 +188,15 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
     
     inputs, targets = dataset
-    inputs = Float32.(inputs)
-    targets = Float32.(targets)
+    inputs = Float32.(inputs')
+    targets = Float32.(targets')
     ann = buildClassANN(Int64(size(inputs, 1)), topology, Int64(size(targets, 1));
     transferFunctions = transferFunctions)
-    loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y)
-    opt = Adam(learningRate)
+    loss(model, x, y) = (size(y, 2) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y)
+    opt = Flux.setup(Adam(learningRate), ann)
     for _ in 1:maxEpochs
-        Flux.train!(loss, ann, [(inputs', targets')], opt)
-        if loss(ann, inputs', targets') <= minLoss
+        Flux.train!(loss, ann, [(inputs, targets)], opt)
+        if loss(ann, inputs, targets) <= minLoss
             return ann
         end
     end
@@ -256,19 +256,19 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     trainingInputs, trainingTargets = trainingDataset
     testInputs, testTargets = testDataset
     validationInputs, validationTargets = validationDataset
-    trainingInputs = Float32.(trainingInputs)
-    trainingTargets = Float32.(trainingTargets)
-    testInputs = Float32.(testInputs)
-    testTargets = Float32.(testTargets)
-    validationInputs = Float32.(validationInputs)
-    validationTargets = Float32.(validationTargets)
-    existsTestDataset = testDataset != (Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0))
-    existsValidationDataset = validationDataset != (Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0))
+    trainingInputs = Float32.(trainingInputs')
+    trainingTargets = Float32.(trainingTargets')
+    testInputs = Float32.(testInputs')
+    testTargets = Float32.(testTargets')
+    validationInputs = Float32.(validationInputs')
+    validationTargets = Float32.(validationTargets')
+    existsTestDataset = length(testDataset[2]) > 0
+    existsValidationDataset = length(validationDataset[2]) > 0
 
     ann = buildClassANN(Int64(size(trainingInputs, 1)),topology, Int64(size(trainingTargets, 1));
     transferFunctions = transferFunctions)
     loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y)
-    opt = Adam(learningRate)
+    opt = Flux.setup(Adam(learningRate), ann)
 
     trainingLossHistory = Float32[]
     testLossHistory = Float32[]
@@ -279,15 +279,16 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     epochs = 0
     epoch = 0
     trainingLoss = minLoss + 1
-    while !(epoch == maxEpochs) || !(epochs == maxEpochsVal) || !(trainingLoss <= minLoss)
-        Flux.train!(loss, ann, [(trainingInputs', trainingTargets')], opt)
-        trainingLoss = loss(ann, trainingInputs', trainingTargets')
-        push!(trainingLossHistory, loss(ann, trainingInputs', trainingTargets'))
+    while !(epoch >= maxEpochs) && !(epochs >= maxEpochsVal) && !(trainingLoss <= minLoss)
+        print("Hello, world!")
+        Flux.train!(loss, ann, [(trainingInputs, trainingTargets)], opt)
+        trainingLoss = loss(ann, trainingInputs, trainingTargets)
+        push!(trainingLossHistory, loss(ann, trainingInputs, trainingTargets))
         if existsTestDataset
-            push!(testLossHistory, loss(ann, testInputs', testTargets'))
+            push!(testLossHistory, loss(ann, testInputs, testTargets))
         end
         if existsValidationDataset
-            validationLoss = loss(ann, validationInputs', validationTargets')
+            validationLoss = loss(ann, validationInputs, validationTargets)
             push!(validationLossHistory, validationLoss)
             if validationLoss < bestANNError
                 bestANN = deepcopy(ann)
@@ -299,15 +300,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
         end
         epoch += 1
     end
-    if existsTestDataset & existsValidationDataset
-        return ann, trainingLossHistory
-    elseif existsTestDataset
-        return ann, trainingLossHistory, testLossHistory
-    elseif  existsValidationDataset
-        return bestANN, trainingLossHistory, validationLossHistory
-    else 
-        return bestANN, trainingLossHistory, validationLossHistory, testLossHistory
-    end       
+    return bestANN, trainingLossHistory, validationLossHistory, testLossHistory       
 end
 
 function trainClassANN(topology::AbstractArray{<:Int,1},
