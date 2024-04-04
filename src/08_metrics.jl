@@ -142,3 +142,45 @@ function printConfusionMatrix(outputs::AbstractArray{<:Any,1}, targets::Abstract
     println(metrics[8])
     return metrics
 end;
+
+
+
+# Definir una matriz de salida (outputs) y una matriz de objetivos (targets)
+outputs = [true true false false; false false true true]
+targets = [true false true false; true false true false]
+
+# Calcular la matriz de confusión y otras métricas utilizando la función confusionMatrix
+result = confusionMatrix(outputs, targets; weighted=true)
+
+# Imprimir los resultados para verificar
+println("Metrics:")
+println("Precision: ", result[1])
+println("Error rate: ", result[2])
+println("Sensitivity: ", result[3])
+println("Specificity: ", result[4])
+println("VPP: ", result[5])
+println("VPN: ", result[6])
+println("F1: ", result[7])
+println("Confusion matrix:")
+println(result[8])
+
+
+
+# Definir una matriz de salida (outputs) y una matriz de objetivos (targets)
+outputs = [true true false false; false false true true]
+targets = [true false true false; true false true false]
+
+# Calcular la matriz de confusión y otras métricas utilizando la función confusionMatrix
+result = confusionMatrix(outputs, targets; weighted=false)
+
+# Imprimir los resultados para verificar
+println("Metrics:")
+println("Precision: ", result[1])
+println("Error rate: ", result[2])
+println("Sensitivity: ", result[3])
+println("Specificity: ", result[4])
+println("VPP: ", result[5])
+println("VPN: ", result[6])
+println("F1: ", result[7])
+println("Confusion matrix:")
+println(result[8])
