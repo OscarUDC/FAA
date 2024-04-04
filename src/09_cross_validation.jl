@@ -4,7 +4,7 @@ using Random:seed!
 
 function crossvalidation(N::Int64, k::Int64)
     if k > N
-        error("k cannot be greater than N")
+        throw(ArgumentError("k ($k) cannot be greater than N ($N)"))
     end
     subset = collect(1:k)
     subsets = repeat(subset, outer = ceil(Int, N/k))
@@ -12,7 +12,7 @@ function crossvalidation(N::Int64, k::Int64)
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
-    indexes = zeros(Int, length(targets))
+    indexes = zeros(Int64, length(targets))
     indexes[targets] .= crossvalidation(sum(targets), k)
     indexes[.!targets] .= crossvalidation(sum(.!targets), k)
     return indexes
@@ -21,19 +21,18 @@ end;
 function crossvalidation(targets::AbstractArray{Bool,2}, k::Int64)
     indexes = zeros(Int, size(targets, 1))
     for class in axes(targets, 2)
-        indexes[class] = crossvalidation(sum(targets[:, class]), k)
+        indexes[targets[:, class] .== true] = crossvalidation(sum(targets[:, class]), k)
     end
     return indexes
 end;
 
 function crossvalidation(targets::AbstractArray{<:Any,1}, k::Int64)
-    if size(targets, 2) > 2
-        targets = oneHotEncoding(targets)
+    if length(unique(targets)) > 2
+        processedTargets = oneHotEncoding(targets)
+    else
+        processedTargets = targets .== unique(targets)[1]
     end
-    indexes = zeros(Int, size(targets, 1))
-    for class in axes(targets, 2)
-        indexes[class] = crossvalidation(sum(targets[:, class]), k)
-    end
+    indexes = crossvalidation(processedTargets, k)
     return indexes
 end;
 
@@ -45,13 +44,13 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, validationRatio::Real=0, maxEpochsVal::Int=20, showText::Bool=false)
     
     numFolds = maximum(crossValidationIndices)
-    inputs = oneHotEncoding(inputs)
+    processedTargets = oneHotEncoding(targets)
     (accuracy, errorRate, sensitivity, specificity, ppv, npv, f1Score) = (Vector{Float64}(undef, numFolds) for _ in 1:7)
     for fold in 1:numFolds
         trainingInputs = inputs[crossValidationIndices .!= fold, :]
-        trainingTargets = targets[crossValidationIndices .!= fold, :]
+        trainingTargets = processedTargets[crossValidationIndices .!= fold, :]
         testInputs = inputs[crossValidationIndices .== fold, :]
-        testTargets = targets[crossValidationIndices .== fold, :]
+        testTargets = processedTargets[crossValidationIndices .== fold, :]
         (accuracyExecution, errorRateExecution, sensitivityExecution, specificityExecution,
         ppvExecution, npvExecution, f1ScoreExecution) = (Vector{Float64}(undef, numExecutions) for _ in 1:7)
         for execution in 1:numExecutions

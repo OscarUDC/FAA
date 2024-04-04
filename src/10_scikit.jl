@@ -29,17 +29,15 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict,
         if !haskey(modelHyperparameters, "maxEpochsVal")
             modelHyperparameters["maxEpochsVal"] = 20
         end
-        if !haskey(modelHyperparameters, "showText")
-            modelHyperparameters["showText"] = false
-        end
         return ANNCrossValidation(modelHyperparameters["topology"], inputs, targets, crossValidationIndices;
         numExecutions = modelHyperparameters["numExecutions"],
         transferFunctions = modelHyperparameters["transferFunctions"],
         maxEpochs = modelHyperparameters["maxEpochs"], minLoss = modelHyperparameters["minLoss"],
         learningRate = modelHyperparameters["learningRate"], validationRatio = modelHyperparameters["validationRatio"],
-        maxEpochsVal = modelHyperparameters["maxEpochsVal"], showText = modelHyperparameters["showText"])
+        maxEpochsVal = modelHyperparameters["maxEpochsVal"])
     end 
-    targets = string.(targets)
+    processedInputs = normalizeZeroMean(inputs)
+    processedTargets = string.(targets)
     if modelType == :SVC
         if !haskey(modelHyperparameters, "kernel")
             modelHyperparameters["kernel"] = "rbf"
@@ -70,13 +68,12 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict,
         throw(ArgumentError("Model type $modelType does not exist or is not allowed"))
     end
     numFolds = maximum(crossValidationIndices)
-    inputs = confusionMatrix(inputs, targets)
     (accuracy, errorRate, sensitivity, specificity, ppv, npv, f1Score) = (Vector{Float64}(undef, numFolds) for _ in 1:7)
     for fold in 1:numFolds
-        trainingInputs = inputs[crossValidationIndices .!= fold, :]
-        trainingTargets = targets[crossValidationIndices .!= fold, :]
-        testInputs = inputs[crossValidationIndices .== fold, :]
-        testTargets = targets[crossValidationIndices .== fold, :]
+        trainingInputs = processedInputs[crossValidationIndices .!= fold, :]
+        trainingTargets = processedTargets[crossValidationIndices .!= fold, :]
+        testInputs = processedInputs[crossValidationIndices .== fold, :]
+        testTargets = processedTargets[crossValidationIndices .== fold, :]
         trainedModel = fit!(model, trainingInputs, trainingTargets)
         testOutputs = predict(trainedModel, testInputs)
         accuracy[fold], errorRate[fold], sensitivity[fold], specificity[fold],

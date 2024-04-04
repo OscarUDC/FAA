@@ -622,7 +622,7 @@ function crossvalidation(N::Int64, k::Int64)
 end;
 
 function crossvalidation(targets::AbstractArray{Bool,1}, k::Int64)
-    indexes = zeros(Int, length(targets))
+    indexes = zeros(Int64, length(targets))
     indexes[targets] .= crossvalidation(sum(targets), k)
     indexes[.!targets] .= crossvalidation(sum(.!targets), k)
     return indexes
@@ -631,19 +631,18 @@ end;
 function crossvalidation(targets::AbstractArray{Bool,2}, k::Int64)
     indexes = zeros(Int, size(targets, 1))
     for class in axes(targets, 2)
-        indexes[class] = crossvalidation(sum(targets[:, class]), k)
+        indexes[targets[:, class] .== true] = crossvalidation(sum(targets[:, class]), k)
     end
     return indexes
 end;
 
 function crossvalidation(targets::AbstractArray{<:Any,1}, k::Int64)
-    if size(targets, 2) > 2
-        targets = oneHotEncoding(targets)
+    if length(unique(targets)) > 2
+        processedTargets = oneHotEncoding(targets)
+    else
+        processedTargets = targets .== unique(targets)[1]
     end
-    indexes = zeros(Int, size(targets, 1))
-    for class in axes(targets, 2)
-        indexes[class] = crossvalidation(sum(targets[:, class]), k)
-    end
+    indexes = crossvalidation(processedTargets, k)
     return indexes
 end;
 
@@ -661,13 +660,13 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, validationRatio::Real=0, maxEpochsVal::Int=20, showText::Bool=false)
     
     numFolds = maximum(crossValidationIndices)
-    inputs = oneHotEncoding(inputs)
+    processedTargets = oneHotEncoding(targets)
     (accuracy, errorRate, sensitivity, specificity, ppv, npv, f1Score) = (Vector{Float64}(undef, numFolds) for _ in 1:7)
     for fold in 1:numFolds
         trainingInputs = inputs[crossValidationIndices .!= fold, :]
-        trainingTargets = targets[crossValidationIndices .!= fold, :]
+        trainingTargets = processedTargets[crossValidationIndices .!= fold, :]
         testInputs = inputs[crossValidationIndices .== fold, :]
-        testTargets = targets[crossValidationIndices .== fold, :]
+        testTargets = processedTargets[crossValidationIndices .== fold, :]
         (accuracyExecution, errorRateExecution, sensitivityExecution, specificityExecution,
         ppvExecution, npvExecution, f1ScoreExecution) = (Vector{Float64}(undef, numExecutions) for _ in 1:7)
         for execution in 1:numExecutions
@@ -741,17 +740,15 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict,
         if !haskey(modelHyperparameters, "maxEpochsVal")
             modelHyperparameters["maxEpochsVal"] = 20
         end
-        if !haskey(modelHyperparameters, "showText")
-            modelHyperparameters["showText"] = false
-        end
         return ANNCrossValidation(modelHyperparameters["topology"], inputs, targets, crossValidationIndices;
         numExecutions = modelHyperparameters["numExecutions"],
         transferFunctions = modelHyperparameters["transferFunctions"],
         maxEpochs = modelHyperparameters["maxEpochs"], minLoss = modelHyperparameters["minLoss"],
         learningRate = modelHyperparameters["learningRate"], validationRatio = modelHyperparameters["validationRatio"],
-        maxEpochsVal = modelHyperparameters["maxEpochsVal"], showText = modelHyperparameters["showText"])
+        maxEpochsVal = modelHyperparameters["maxEpochsVal"])
     end 
-    targets = string.(targets)
+    processedInputs = normalizeZeroMean(inputs)
+    processedTargets = string.(targets)
     if modelType == :SVC
         if !haskey(modelHyperparameters, "kernel")
             modelHyperparameters["kernel"] = "rbf"
@@ -782,13 +779,12 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict,
         throw(ArgumentError("Model type $modelType does not exist or is not allowed"))
     end
     numFolds = maximum(crossValidationIndices)
-    normalizeZeroMean!(inputs)
     (accuracy, errorRate, sensitivity, specificity, ppv, npv, f1Score) = (Vector{Float64}(undef, numFolds) for _ in 1:7)
     for fold in 1:numFolds
-        trainingInputs = inputs[crossValidationIndices .!= fold, :]
-        trainingTargets = targets[crossValidationIndices .!= fold, :]
-        testInputs = inputs[crossValidationIndices .== fold, :]
-        testTargets = targets[crossValidationIndices .== fold, :]
+        trainingInputs = processedInputs[crossValidationIndices .!= fold, :]
+        trainingTargets = processedTargets[crossValidationIndices .!= fold, :]
+        testInputs = processedInputs[crossValidationIndices .== fold, :]
+        testTargets = processedTargets[crossValidationIndices .== fold, :]
         trainedModel = fit!(model, trainingInputs, trainingTargets)
         testOutputs = predict(trainedModel, testInputs)
         accuracy[fold], errorRate[fold], sensitivity[fold], specificity[fold],
