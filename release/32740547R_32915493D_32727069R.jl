@@ -200,7 +200,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     ann = buildClassANN(Int64(size(inputs, 1)), topology, Int64(size(targets, 1)))
     loss(model, inputs, targets) = size(targets,1)==1 ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
 
-    opt = Adam(learningRate)
+    opt = Flux.setup(Adam(learningRate), ann)
     for epoch in 0:maxEpochs
         Flux.train!(loss, ann, [(inputsT, targetsT)], opt)
         if loss(ann, inputsT, targetsT) <= minLoss
@@ -290,10 +290,10 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     ann = buildClassANN(size(inputsTr, 1),topology, size(targetsTr, 1))
 
     # Definimos la función de pérdida
-    loss(model, inputs, targets) = size(targets,1)==1 ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
+    loss(model, inputs, targets) = size(targets,1)==1 ? Flux.Losses.binarycrossentropy(model(inputs), targets) : Flux.Losses.crossentropy(model(inputs), targets)
 
     # Inicializamos el optimizador
-    opt = ADAM(learningRate)
+    opt = Flux.setup(Adam(learningRate), ann)
 
     # Vector para almacenar los valores de pérdida en cada época
     lossHistoryTr = Float32[]
