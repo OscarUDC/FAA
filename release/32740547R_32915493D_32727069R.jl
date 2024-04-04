@@ -185,39 +185,31 @@ end;
 function trainClassANN(topology::AbstractArray{<:Int,1},
     dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}},
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
-    maxEpochs::Int=1000,
-    minLoss::Real=0.0,
-    learningRate::Real=0.01)
+    maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
     
     inputs, targets = dataset
-
-    inputsT = transpose(inputs)
-    targetsT = transpose(targets)
-    
-    inputsT = Float32.(inputsT)
-    targetsT = Float32.(targetsT)
-
+    inputs = Float32.(inputs)
+    targets = Float32.(targets)
     ann = buildClassANN(Int64(size(inputs, 1)), topology, Int64(size(targets, 1));
     transferFunctions = transferFunctions)
-    loss(model, inputs, targets) = size(targets,1)==1 ? Losses.binaryCrossEntropy(model(inputs), targets) : Losses.crossEntropy(model(inputs), targets)
-
-    opt = Flux.setup(Adam(learningRate), ann)
-    for epoch in 0:maxEpochs
-        Flux.train!(loss, ann, [(inputsT, targetsT)], opt)
-        if loss(ann, inputsT, targetsT) <= minLoss
+    loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y)
+    opt = Flux.setup(Adam(learningRate), ann) 
+    for _ in 1:maxEpochs
+        Flux.train!(loss, ann, [(inputs', targets')], opt)
+        if loss(ann, inputs', targets') <= minLoss
             return ann
         end
     end
     return ann
 end
 
-function trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}; 
-    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), 
-    maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
+function trainClassANN(topology::AbstractArray{<:Int,1},
+    (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}};
+    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),  maxEpochs::Int=1000,
+    minLoss::Real=0.0, learningRate::Real=0.01)
 
-newTargets = reshape(targets, 1, length(targets))
-
-return trainClassANN(topology, Tuple{inputs, newTargets}, transferFunctions, maxEpochs, minLoss, learningRate)
+    columnTargets = reshape(targets, :, 1)
+    trainClassANN(topology, Tuple{inputs, columnTargets}, transferFunctions, maxEpochs, minLoss, learningRate)
 end
 
 

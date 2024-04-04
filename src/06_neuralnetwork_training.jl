@@ -2,69 +2,21 @@
 using Flux.Losses
 using Flux
 
-"""
-Creates and trains a neuronal network with the depth and the number of neurons chosen
-----------
-Attributes
-----------
-topology: number of neurones each layer has. 
-Inputs: inputs the neuronal network will recieve.
-targets: the outputs the ANN is supposed to return.
-transferFunctions: which transfer fuction each layer has.
-maxEpochs: maximum number of epoches (times the training bucle) can have the ANN
-minLoss: point where the ANN is fully "trained"
-learningRate: learning rate of the training fuction
-"""
-function trainClassANN(topology::AbstractArray{<:Int,1},  
-    (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}};  
-    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),  
-    maxEpochs::Int=1000, 
-    minLoss::Real=0.0, 
-    learningRate::Real=0.01)
-
-    newTargets = reshape(targets, :, 1)
-    
-    trainClassANN(topology, Tuple{inputs, newTargets}, transferFunctions, maxEpochs, minLoss, learningRate)
-end
-
-"""
-Creates and trains a neuronal network with the depth and the number of neurons chosen
-----------
-Attributes
-----------
-topology: number of neurones each layer has. 
-Inputs: inputs the neuronal network will recieve.
-targets: the outputs the ANN is supposed to return.
-transferFunctions: which transfer fuction each layer has.
-maxEpochs: maximum number of epoches (times the training bucle) can have the ANN
-minLoss: point where the ANN is fully "trained"
-learningRate: learning rate of the training fuction
-"""
 function trainClassANN(topology::AbstractArray{<:Int,1},
     dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}},
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
-    maxEpochs::Int=1000,
-    minLoss::Real=0.0,
-    learningRate::Real=0.01)
+    maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
     
     inputs, targets = dataset
-
-    inputsT = transpose(inputs)
-    targetsT = transpose(targets)
-    
-    inputsT = Float32.(inputsT)
-    targetsT = Float32.(targetsT)
-
-    ann = buildClassANN(Int64(size(inputs, 1)), topology, Int64(size(targets, 1)))
-    
-    # Definimos la función de pérdida
-    loss(model, inputs, targets) = size(targets,1)==1 ? Flux.Losses.binarycrossentropy(model(inputs), targets) : Flux.Losses.crossentropy(model(inputs), targets)
-
-    # Inicializamos el optimizador
-    opt = Flux.setup(Adam(learningRate), ann)
-    for epoch in 0:maxEpochs
-        Flux.train!(loss, ann, [(inputsT, targetsT)], opt)
-        if loss(ann, inputsT, targetsT) <= minLoss
+    inputs = Float32.(inputs)
+    targets = Float32.(targets)
+    ann = buildClassANN(Int64(size(inputs, 1)), topology, Int64(size(targets, 1));
+    transferFunctions = transferFunctions)
+    loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y)
+    opt = Flux.setup(Adam(learningRate), ann) 
+    for _ in 1:maxEpochs
+        Flux.train!(loss, ann, [(inputs', targets')], opt)
+        if loss(ann, inputs', targets') <= minLoss
             return ann
         end
     end
@@ -72,43 +24,32 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
 end
 
 function trainClassANN(topology::AbstractArray{<:Int,1},
+    (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}};
+    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),  maxEpochs::Int=1000,
+    minLoss::Real=0.0, learningRate::Real=0.01)
+
+    columnTargets = reshape(targets, :, 1)
+    trainClassANN(topology, Tuple{inputs, columnTargets}, transferFunctions, maxEpochs, minLoss, learningRate)
+end
+
+function trainClassANN(topology::AbstractArray{<:Int,1},
     trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}};
-    validationDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}=
-    (Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0)),
-    testDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}=
-    (Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0)),
+    validationDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}=(Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0)),
+    testDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}=(Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0)),
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
-    maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01,
-    maxEpochsVal::Int=20) 
+    maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, maxEpochsVal::Int=20) 
     
-   
-    # Extraemos los datos de entrada y salida de los conjuntos de datos
-    inputsTr, targetsTr = trainingDataset
-    inputsV, targetsV = validationDataset
-    inputsTe, targetsTe = testDataset
-    
-    # Transponemos las matrices de entrada y salida para cada dataset si es necesario
-    inputsTr = transpose(inputsTr)
-    targetsTr = transpose(targetsTr)
+    trainingInputs, trainingTargets = trainingDataset
+    testInputs, testTargets = testDataset
+    validationInputs, validationTargets = validationDataset
+    trainingInputs = Float32.(trainingInputs)
+    trainingTargets = Float32.(trainingTargets)
+    testInputs = Float32.(testInputs)
+    testTargets = Float32.(testTargets)
+    validationInputs = Float32.(validationInputs)
+    validationTargets = Float32.(validationTargets)
 
-    inputsV = transpose(inputsV)
-    targetsV = transpose(targetsV)
-
-    inputsTe = transpose(inputsTe)
-    targetsTe = transpose(targetsTe)
-
-    # Convertimos los datos a Float32
-    inputsTr = Float32.(inputsTr)
-    targetsTr = Float32.(targetsTr)
-
-    inputsV = Float32.(inputsV)
-    targetsV = Float32.(targetsV)
-
-    inputsTe = Float32.(inputsTe)
-    targetsTe = Float32.(targetsTe)
-
-    # Construimos la red neuronal
-    ann = buildClassANN(Int64(size(inputsTr, 1)),topology, Int64(size(targetsTr, 1)))
+    ann = buildClassANN(Int64(size(trainingInputs, 1)),topology, Int64(size(trainingTargets, 1)))
 
     # Definimos la función de pérdida
     loss(model, inputs, targets) = size(targets,1)==1 ? Flux.Losses.binarycrossentropy(model(inputs), targets) : Flux.Losses.crossentropy(model(inputs), targets)
