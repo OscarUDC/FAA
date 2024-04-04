@@ -172,28 +172,23 @@ end;
 # Funciones para crear y entrenar una RNA
 
 function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutputs::Int; transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)))
-    
     ann = Chain()  # Inicializa la red neuronal
-
     # Agrega las capas intermedias
-    for i in 1:1:length(topology)
+    for i in eachindex(topology)
         if i == 1
             ann = Chain(ann..., Dense(numInputs, topology[i], transferFunctions[i]))
         else
             ann = Chain(ann..., Dense(topology[i-1], topology[i], transferFunctions[i]))
         end
     end
-
     # Agrega la capa de salida
     if numOutputs > 2
-        ann = Chain(ann..., Dense(topology[end], numOutputs, identity))
-        ann = Chain(ann...,identity)
+        ann = Chain(ann..., Dense(topology[end], numOutputs), softmax)
     else
         ann = Chain(ann..., Dense(topology[end], 1, transferFunctions[end]))
     end
-    
     return ann
-end
+end;
 
 function trainClassANN(topology::AbstractArray{<:Int,1},
     dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}},
