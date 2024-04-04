@@ -193,7 +193,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     ann = buildClassANN(Int64(size(inputs, 1)), topology, Int64(size(targets, 1));
     transferFunctions = transferFunctions)
     loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y)
-    opt = Adam(learningRate), ann 
+    opt = Adam(learningRate)
     for _ in 1:maxEpochs
         Flux.train!(loss, ann, [(inputs', targets')], opt)
         if loss(ann, inputs', targets') <= minLoss
@@ -268,7 +268,7 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     ann = buildClassANN(Int64(size(trainingInputs, 1)),topology, Int64(size(trainingTargets, 1));
     transferFunctions = transferFunctions)
     loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y)
-    opt = Adam(learningRate), ann
+    opt = Adam(learningRate)
 
     trainingLossHistory = Float32[]
     testLossHistory = Float32[]
