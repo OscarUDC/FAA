@@ -42,7 +42,7 @@ function printConfusionMatrix(outputs::AbstractArray{<:Real,1}, targets::Abstrac
 end;
 
 function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{Bool,2}; weighted::Bool=true)
-    n_patterns, n_classes = size(outputs)  # Obtener las dimensiones de las matrices
+    _, n_classes = size(outputs)  # Obtener las dimensiones de las matrices
     if n_classes != size(targets, 2)  # Verificar si el número de columnas es diferente en las matrices outputs y targets
         error("Number of columns in outputs and targets matrices must be equal")
     end
@@ -50,11 +50,6 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     if n_classes == 1  # Si solo hay una clase, llamar a la función anterior
         return confusionMatrix(outputs[:, 1], targets[:, 1]; weighted=weighted)
     end
-
-    if n_classes == 2  # Comprobar si el número de clases es igual a 2
-        error("Invalid input dimensions")
-    end
-
     # Inicializar vectores de métricas con ceros
     sensitivity = zeros(Float64, n_classes)
     specificity = zeros(Float64, n_classes)
@@ -63,47 +58,26 @@ function confusionMatrix(outputs::AbstractArray{Bool,2}, targets::AbstractArray{
     F1 = zeros(Float64, n_classes)
 
     # Calcular matriz de confusión(sin necesidad de inicializarla primero con ceros)
-    confusion_matrix = [sum(outputs[:, j] .& targets[:, i]) for i in 1:n_classes, j in 1:n_classes] #Hacemos un doble bucle para rellenar la matriz con ceros de primeras, con el fin de reservar los huecos en memoria
+    _, _, sensitivity[i], specificity[i], VPP[i], VPN[i], F1[i], _ = [sum(outputs[:, i] .& targets[:, i]) for i in axes(outputs, 2)]
 
-    # Calcular métricas macro o weighted
-    if weighted
-        weights = sum(targets, dims=1)
-        TP = sum(outputs .& targets, dims=1)
-        TN = sum((.!outputs) .& (.!targets), dims=1)
-        FP = sum(outputs .& .!targets, dims=1)
-        FN = sum(.!outputs .& targets, dims=1)
-
-        accuracy = sum(TP ./ (TP .+ FP) .* weights) / sum(weights)
-        error_rate = 1 - accuracy
-        sensitivity = sum(TP ./ (TP .+ FN) .* weights) / sum(weights)
-        specificity = sum(TN ./ (TN .+ FP) .* weights) / sum(weights)
-        VPP = sensitivity  # Same as sensitivity for multiclass
-        VPN = specificity  # Same as specificity for multiclass
-        F1 = 2 * sensitivity * accuracy / (sensitivity + accuracy)
-
-    else
-        TP = sum(outputs .& targets, dims=1)
-        TN = sum((.!outputs) .& (.!targets), dims=1)
-        FP = sum(outputs .& .!targets, dims=1)
-        FN = sum(.!outputs .& targets, dims=1)
-
-        accuracy = sum(TP ./ (TP .+ FP)) / n_classes
-        error_rate = 1 - accuracy
-        sensitivity = sum(TP ./ (TP .+ FN)) / n_classes
-        specificity = sum(TN ./ (TN .+ FP)) / n_classes
-        VPP = sensitivity  # Same as sensitivity for multiclass
-        VPN = specificity  # Same as specificity for multiclass
-        F1 = 2 * sensitivity * accuracy / (sensitivity + accuracy) / n_classes
+    accuracy = accuracy(outputs, targets)
+    confusionMatrix = zeros(n_classes, n_classes)
+    for row in eachindex(outputs, 1)
+        realClass = findfirst(targets[row, :])
+        predictedClass = findfirst(outputs[row, :])
+        confusionMatrix[realClass, predictedClass] += 1
     end
-
-    # Unir los valores de métricas para cada clase en un único valor usando la estrategia macro o weighted
-    sensitivity = weighted ? sensitivity : mean(sensitivity)
-    specificity = weighted ? specificity : mean(specificity)
-    VPP = weighted ? VPP : mean(VPP)
-    VPN = weighted ? VPN : mean(VPN)
-    F1 = weighted ? F1 : mean(F1)
-
-    return (accuracy, error_rate, sensitivity, specificity, VPP, VPN, F1, confusion_matrix)
+    if !weighted
+        return(accuracy, 1 - accuracy, mean(sensitivity), mean(specificity), mean(VPP), mean(VPN), mean(F1), confusionMatrix)
+    else
+        ponderation = sum(confusionMatrix, dims = 2) / size(targets, 1)
+        sensitivity *= ponderation
+        specificity *= ponderation
+        VPP *= ponderation
+        VPN *= ponderation
+        F1 *= ponderation
+    return (accuracy, error_rate, sum(sensitivity), sum(specificity), sum(VPP), sum(VPN), sum(F1), confusion_matrix)
+    end
 end;
 
 # Definir función confusionMatrix para matrices de valores reales
