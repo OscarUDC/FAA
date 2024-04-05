@@ -280,7 +280,6 @@ function trainClassANN(topology::AbstractArray{<:Int,1},
     epoch = 0
     trainingLoss = minLoss + 1
     while !(epoch >= maxEpochs) && !(epochs >= maxEpochsVal) && !(trainingLoss <= minLoss)
-        print("Hello, world!")
         Flux.train!(loss, ann, [(trainingInputs, trainingTargets)], opt)
         trainingLoss = loss(ann, trainingInputs, trainingTargets)
         push!(trainingLossHistory, loss(ann, trainingInputs, trainingTargets))
