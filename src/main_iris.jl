@@ -17,7 +17,7 @@ include.([
 ])
 
 # Cargar datos desde un archivo CSV (o el formato que estés utilizando)
-data = readdlm("db\\iris.data", ',')
+data = readdlm("db\\raw\\iris.data", ',')
 
 # Extracción de características y clases
 features = [row[end] for row in eachrow(data)]
