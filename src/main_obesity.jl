@@ -33,9 +33,16 @@ all_features = []
 for num_col in vcat(BINARY, CATEGORICAL)
     features = [row[num_col] for row in eachrow(data)]
     classes = unique(features)
+    
     encoded_matrix = oneHotEncoding(features, classes)
     
-    # println(encoded_matrix)
+    #! Esto solo es necesario para almacenar los valores en la lista all_features en forma de 0 y 1, en vez de True, False y después representarlo en el CSV, si se trabaja directamente no sería necesario. Aunque siempre es bueno tener el DB bien codificado aparte
+    if num_col in CATEGORICAL || num_col in BINARY
+        # Codificar características categóricas y binarias como una columna plana con 0 y 1
+        encoded_matrix = [join(map(x -> x ? "1" : "0", row)) for row in eachrow(encoded_matrix)]
+    end
+
+    # Agregar características binarias y categóricas codificadas
     push!(all_features, encoded_matrix)
 end
 
@@ -43,7 +50,7 @@ end
 for num_col in vcat(INTEGER, CONTINUOUS)
     feature_numeric = [row[num_col] for row in eachrow(data)]
     min_max_params = calculateMinMaxNormalizationParameters(reshape(feature_numeric, :, 1))
-    normalizeMinMax!(reshape(feature_numeric, :, 1), min_max_params)
+    normalizeMinMax!(reshape(feature_numeric, :, 1), min_max_params) #! Hay que mirar si la normalización ZeroMean puede ser mejor para codificar algunas caracteristicas
 
     # println(feature_numeric)
     push!(all_features, feature_numeric)
