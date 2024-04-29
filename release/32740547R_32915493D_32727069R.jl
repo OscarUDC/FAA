@@ -182,36 +182,60 @@ function buildClassANN(numInputs::Int, topology::AbstractArray{<:Int,1}, numOutp
     return ann
 end;
 
-function trainClassANN(topology::AbstractArray{<:Int,1},
-    dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}},
-    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
-    maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
-    
-    inputs, targets = dataset
-    inputs = Float32.(inputs)
-    targets = Float32.(targets)
-    ann = buildClassANN(Int64(size(inputs, 1)), topology, Int64(size(targets, 1));
-    transferFunctions = transferFunctions)
-    loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y)
-    opt = Adam(learningRate)
-    for _ in 1:maxEpochs
-        Flux.train!(loss, ann, [(inputs', targets')], opt)
-        if loss(ann, inputs', targets') <= minLoss
-            return ann
-        end
-    end
-    return ann
-end
+function trainClassANN(topology::AbstractArray{<:Int,1}, dataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}};
+    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01)
+    (inputs, targets) = dataset;
 
-function trainClassANN(topology::AbstractArray{<:Int,1},
-    (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}};
-    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),  maxEpochs::Int=1000,
-    minLoss::Real=0.0, learningRate::Real=0.01)
+    # Se supone que tenemos cada patron en cada fila
+    # Comprobamos que el numero de filas (numero de patrones) coincide
+    @assert(size(inputs,1)==size(targets,1));
 
-    columnTargets = reshape(targets, :, 1)
-    trainClassANN(topology, Tuple{inputs, columnTargets}, transferFunctions, maxEpochs, minLoss, learningRate)
-end
+    # Creamos la RNA
+    ann = buildClassANN(size(inputs,2), topology, size(targets,2));
 
+    # Definimos la funcion de loss
+    loss(model,x,y) = (size(y,1) == 1) ? Losses.binarycrossentropy(model(x),y) : Losses.crossentropy(model(x),y);
+
+    # Creamos los vectores con los valores de loss y de precision en cada ciclo
+    trainingLosses = Float32[];
+
+    # Empezamos en el ciclo 0
+    numEpoch = 0;
+    # Calculamos el loss para el ciclo 0 (sin entrenar nada)
+    trainingLoss = loss(ann, inputs', targets');
+    #  almacenamos el valor de loss y precision en este ciclo
+    push!(trainingLosses, trainingLoss);
+    #  y lo mostramos por pantalla
+    println("Epoch ", numEpoch, ": loss: ", trainingLoss);
+
+    opt_state = Flux.setup(Adam(learningRate), ann);
+
+    # Entrenamos hasta que se cumpla una condicion de parada
+    while (numEpoch<maxEpochs) && (trainingLoss>minLoss)
+
+        # Entrenamos 1 ciclo. Para ello hay que pasar las matrices traspuestas (cada patron en una columna)
+        Flux.train!(loss, ann, [(inputs', targets')], opt_state);
+
+        # Aumentamos el numero de ciclo en 1
+        numEpoch += 1;
+        # Calculamos las metricas en este ciclo
+        trainingLoss = loss(ann, inputs', targets');
+        #  almacenamos el valor de loss
+        push!(trainingLosses, trainingLoss);
+        #  lo mostramos por pantalla
+        println("Epoch ", numEpoch, ": loss: ", trainingLoss);
+
+    end;
+
+    # Devolvemos la RNA entrenada y el vector con los valores de loss
+    return (ann, trainingLosses);
+end;
+
+
+trainClassANN(topology::AbstractArray{<:Int,1}, (inputs, targets)::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}};
+transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
+maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01) = trainClassANN(topology, (inputs, reshape(targets, length(targets), 1));
+maxEpochs=maxEpochs, minLoss=minLoss, learningRate=learningRate)
 
 # ----------------------------------------------------------------------------------------------
 # ------------------------------------- Practica 3 ---------------------------------------------
@@ -243,96 +267,117 @@ end;
 
 # Funcion para entrenar RR.NN.AA. con conjuntos de entrenamiento, validacion y test. Estos dos ultimos son opcionales
 # Es la funcion anterior, modificada para calcular errores en los conjuntos de validacion y test y realizar parada temprana si es necesario
-function trainClassANN(topology::AbstractArray{<:Int,1}, 
-    trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}; 
-    validationDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}= 
-    (Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0)), 
-    testDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}= 
-    (Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0)), 
-    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)), 
-    maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, 
-    maxEpochsVal::Int=20)
-    
-    trainingInputs, trainingTargets = trainingDataset
-    testInputs, testTargets = testDataset
-    validationInputs, validationTargets = validationDataset
-    trainingInputs = Float32.(trainingInputs)
-    trainingTargets = Float32.(trainingTargets)
-    testInputs = Float32.(testInputs)
-    testTargets = Float32.(testTargets)
-    validationInputs = Float32.(validationInputs)
-    validationTargets = Float32.(validationTargets)
-    existsTestDataset = testDataset != (Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0))
-    existsValidationDataset = validationDataset != (Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0))
+function trainClassANN(topology::AbstractArray{<:Int,1},
+    trainingDataset::  Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}};
+    validationDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}=(Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0)),
+    testDataset::      Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,2}}=(Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0,0)),
+    transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
+    maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, maxEpochsVal::Int=20)
 
-    ann = buildClassANN(Int64(size(trainingInputs, 1)),topology, Int64(size(trainingTargets, 1));
-    transferFunctions = transferFunctions)
-    loss(model, x, y) = (size(y, 1) == 1) ? Losses.binarycrossentropy(model(x), y) : Losses.crossentropy(model(x), y)
-    opt = Adam(learningRate)
+    (trainingInputs,   trainingTargets)   = trainingDataset;
+    (validationInputs, validationTargets) = validationDataset;
+    (testInputs,       testTargets)       = testDataset;
 
-    trainingLossHistory = Float32[]
-    testLossHistory = Float32[]
-    validationLossHistory = Float32[]
+    # Se supone que tenemos cada patron en cada fila
+    # Comprobamos que el numero de filas (numero de patrones) coincide tanto en entrenamiento como en validacion como test
+    @assert(size(trainingInputs,   1)==size(trainingTargets,   1));
+    @assert(size(testInputs,       1)==size(testTargets,       1));
+    @assert(size(validationInputs, 1)==size(validationTargets, 1));
+    # Comprobamos que el numero de columnas coincide en los grupos de entrenamiento y validación, si este no está vacío
+    !isempty(validationInputs)  && @assert(size(trainingInputs, 2)==size(validationInputs, 2));
+    !isempty(validationTargets) && @assert(size(trainingTargets,2)==size(validationTargets,2));
+    # Comprobamos que el numero de columnas coincide en los grupos de entrenamiento y test, si este no está vacío
+    !isempty(testInputs)  && @assert(size(trainingInputs, 2)==size(testInputs, 2));
+    !isempty(testTargets) && @assert(size(trainingTargets,2)==size(testTargets,2));
 
-    bestANN = deepcopy(ann)
-    bestANNError = Inf
-    epochs = 0
-    epoch = 0
-    trainingLoss = minLoss + 1
-    while !(epoch == maxEpochs) || !(epochs == maxEpochsVal) || !(trainingLoss <= minLoss)
-        Flux.train!(loss, ann, [(trainingInputs', trainingTargets')], opt)
-        trainingLoss = loss(ann, trainingInputs', trainingTargets')
-        push!(trainingLossHistory, loss(ann, trainingInputs', trainingTargets'))
-        if existsTestDataset
-            push!(testLossHistory, loss(ann, testInputs', testTargets'))
-        end
-        if existsValidationDataset
-            validationLoss = loss(ann, validationInputs', validationTargets')
-            push!(validationLossHistory, validationLoss)
-            if validationLoss < bestANNError
-                bestANN = deepcopy(ann)
-                bestANNError = validationLoss
-                epochs = 0
-            else 
-                epochs += 1
-            end
-        end
-        epoch += 1
-    end
-    if existsTestDataset & existsValidationDataset
-        return ann, trainingLossHistory
-    elseif existsTestDataset
-        return ann, trainingLossHistory, testLossHistory
-    elseif  existsValidationDataset
-        return bestANN, trainingLossHistory, validationLossHistory
-    else 
-        return bestANN, trainingLossHistory, validationLossHistory, testLossHistory
-    end       
-end
+    # Creamos la RNA
+    ann = buildClassANN(size(trainingInputs,2), topology, size(trainingTargets,2); transferFunctions=transferFunctions);
+
+    # Definimos la funcion de loss
+    loss(model,x,y) = (size(y,1) == 1) ? Losses.binarycrossentropy(model(x),y) : Losses.crossentropy(model(x),y);
+
+    # Creamos los vectores con los valores de loss y de precision en cada ciclo
+    trainingLosses   = Float32[];
+    validationLosses = Float32[];
+    testLosses       = Float32[];
+
+    # Empezamos en el ciclo 0
+    numEpoch = 0;
+
+    # Una funcion util para calcular los resultados y mostrarlos por pantalla si procede
+    function calculateLossValues()
+        # Calculamos el loss en entrenamiento, validacion y test. Para ello hay que pasar las matrices traspuestas (cada patron en una columna)
+        trainingLoss = loss(ann, trainingInputs', trainingTargets');
+	validationLoss = NaN; testLoss = NaN;
+        push!(trainingLosses, trainingLoss);
+        !isempty(validationInputs) && (validationLoss = loss(ann, validationInputs', validationTargets'); push!(validationLosses, validationLoss);)
+	!isempty(      testInputs) && (testLoss       = loss(ann,       testInputs',       testTargets'); push!(      testLosses,       testLoss);)
+        return (trainingLoss, validationLoss, testLoss);
+    end;
+
+    # Calculamos los valores de loss para el ciclo 0 (sin entrenar nada)
+    (trainingLoss, validationLoss, _) = calculateLossValues();
+
+    if isempty(validationInputs) maxEpochsVal=Inf; end;
+
+    # Numero de ciclos sin mejorar el error de validacion y el mejor error de validation encontrado hasta el momento
+    numEpochsValidation = 0; bestValidationLoss = validationLoss;
+    # Cual es la mejor ann que se ha conseguido
+    bestANN = deepcopy(ann);
+
+    opt_state = Flux.setup(Adam(learningRate), ann)
+
+    # Entrenamos hasta que se cumpla una condicion de parada
+    while (numEpoch<maxEpochs) && (trainingLoss>minLoss) && (numEpochsValidation<maxEpochsVal)
+
+        # Entrenamos 1 ciclo. Para ello hay que pasar las matrices traspuestas (cada patron en una columna)
+        Flux.train!(loss, ann, [(trainingInputs', trainingTargets')], opt_state);
+
+        # Aumentamos el numero de ciclo en 1
+        numEpoch += 1;
+
+        # Calculamos los valores de loss para este ciclo
+        (trainingLoss, validationLoss, _) = calculateLossValues();
+
+        # Aplicamos la parada temprana si hay conjunto de validacion
+        if !isempty(validationInputs)
+            if validationLoss<bestValidationLoss
+                bestValidationLoss = validationLoss;
+                numEpochsValidation = 0;
+                bestANN = deepcopy(ann);
+            else
+                numEpochsValidation += 1;
+            end;
+        end;
+
+    end;
+
+    # Si no hubo conjunto de validacion, la mejor RNA será siempre la del último ciclo
+    if isempty(validationInputs)
+        bestANN = ann;
+    end;
+
+    return (bestANN, trainingLosses, validationLosses, testLosses);
+end;
+
 
 function trainClassANN(topology::AbstractArray{<:Int,1},
-    trainingDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}};
-    validationDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}=
-    (Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0)),
-    testDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}=
-    (Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0)),
+    trainingDataset::  Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}};
+    validationDataset::Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}=(Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0)),
+    testDataset::      Tuple{AbstractArray{<:Real,2}, AbstractArray{Bool,1}}=(Array{eltype(trainingDataset[1]),2}(undef,0,0), falses(0)),
     transferFunctions::AbstractArray{<:Function,1}=fill(σ, length(topology)),
-    maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01,
-    maxEpochsVal::Int=20)
+    maxEpochs::Int=1000, minLoss::Real=0.0, learningRate::Real=0.01, maxEpochsVal::Int=20)
 
-    trainingInputs, trainingTargets = trainingDataset
-    testInputs, testTargets = testDataset
-    validationInputs, validationTargets = validationDataset
-    trainingTargets = reshape(trainingTargets, :, 1)
-    testTargets = reshape(testTargets, :, 1)
-    validationTargets = reshape(validationTargets, :, 1)
+    (trainingInputs,   trainingTargets)   = trainingDataset;
+    (validationInputs, validationTargets) = validationDataset;
+    (testInputs,       testTargets)       = testDataset;
 
-    # Llamamos a la función original con los nuevos argumentos
-    return trainClassANN(topology, (trainingInputs, trainingTargets);
-    validationDataset =(validationInputs, validationTargets),
-    testDataset=(testInputs, testTargets), transferFunctions=transferFunctions, maxEpochs=maxEpochs,
-    minLoss=minLoss, learningRate=learningRate, maxEpochsVal=maxEpochsVal)
-end
+    return trainClassANN(topology, (trainingInputs, reshape(trainingTargets, length(trainingTargets), 1));
+    validationDataset=(validationInputs, reshape(validationTargets, length(validationTargets), 1)),
+    testDataset=(testInputs, reshape(testTargets, length(testTargets), 1)),
+    transferFunctions=transferFunctions, maxEpochs=maxEpochs, minLoss=minLoss, learningRate=learningRate, maxEpochsVal=maxEpochsVal);
+end;
+
 
 
 # ----------------------------------------------------------------------------------------------
