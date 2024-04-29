@@ -21,10 +21,10 @@ an array of arrays, topologies, which every array is a topology
 """
 function CreationOfTopologies(number_of_topologies, number_of_layers, min_neurons_per_layer, max_neurons_per_layer, num_inputs, num_outputs)
     topologies = []
-    for topology in number_of_topologies
+    for topology in eachindex(number_of_topologies)
         this_topology = []
         push!(this_topology, num_inputs)
-        for layer in number_of_layers
+        for layer in eachindex(number_of_layers)
             push!(this_topology, rand(min_neurons_per_layer:max_neurons_per_layer))
         end
         if num_outputs == 2
