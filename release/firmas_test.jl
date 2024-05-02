@@ -1,38 +1,14 @@
-# La matriz booleana
-matriz_bool = [
-    1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 0 1 0 0 0 0 0; 1 0 0 0 0 0 0; 
-    0 0 1 0 0 0 0; 0 0 0 1 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 
-    1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 0 0 1 0 0 0 0; 1 0 0 0 0 0 0; 
-    1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 0 0 1 0 0 0 0; 0 0 1 0 0 0 0; 1 0 0 0 0 0 0; 
-    0 1 0 0 0 0 0; 0 0 1 0 0 0 0; 0 0 1 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 
-    1 0 0 0 0 0 0; 0 1 0 0 0 0 0; 0 0 1 0 0 0 0; 1 0 0 0 0 0 0; 0 1 0 0 0 0 0; 
-    0 0 0 1 0 0 0; 1 0 0 0 0 0 0; 0 1 0 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 
-    1 0 0 0 0 0 0; 0 1 0 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 
-    1 0 0 0 0 0 0; 0 1 0 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 
-    0 0 1 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 0 0 1 0 0 0 0; 
-    0 0 1 0 0 0 0; 1 0 0 0 0 0 0; 0 1 0 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 
-    1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 0 0 1 0 0 0 0; 1 0 0 0 0 0 0; 1 0 0 0 0 0 0; 
-    1 0 0 0 0 0 0; 0 0 1 0 0 0 0;
-]
+using Flux
 
-# Convertir la matriz booleana a una matriz numérica
-matriz_num = convert(Array{Float64}, matriz_bool)
+include.("32740547R_32915493D_32727069R.jl")
 
-# Función para convertir la matriz en un vector
-function matriz_a_vector(matriz)
-    vector = zeros(Float64, size(matriz, 1))
-    for i in 1:size(matriz, 1)
-        # Encontrar la posición del 1 en la fila
-        idx = findfirst(matriz[i, :] .== 1)
-        # Asignar el valor según la posición del 1
-        vector[i] = (idx - 1) / 6
-    end
-    return vector
-end
+# Las observaciones están a lo largo de las filas y las características a lo largo de las columnas
+inputs = rand(Float32, 1000, 5)  # 100 muestras x 10 características
+targets = inputs .> mean(inputs)  # 100 muestras, datos binarios de objetivo
 
-# Convertir la matriz en un vector
-vector_resultante = matriz_a_vector(matriz_num)
-
-# Mostrar el vector resultante
-println(vector_resultante)
-
+dataset = (inputs, targets)
+# Definir la topología de la red (número de neuronas en cada capa)
+topology = [32, 16, 16, 16, 2]
+# Llamar a la función trainClassANN
+# TARDA UN RATO, REDUCIR maxEpochs!!!!
+model = trainClassANN(topology, dataset; maxEpochs = 100000, learningRate = 0.05)
