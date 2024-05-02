@@ -509,6 +509,7 @@ end;
 
 using Random
 using Random:seed!
+seed!(123)
 
 function crossvalidation(N::Int64, k::Int64)
     indices = repeat(1:k, Int64(ceil(N/k)));

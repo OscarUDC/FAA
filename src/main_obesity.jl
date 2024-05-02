@@ -73,16 +73,25 @@ targets_train = [row[TARGETS] for row in eachrow(data)]
 
 # Define los hiperparámetros del modelo (ajústalos según tus necesidades)
 modelHyperparameters = Dict(
-    "max_depth" => 2,  # Ejemplo de topología de red neuronal
+    "n_neighbors" => 2,  # Ejemplo de topología de red neuronal
 )
 
 # Define el número de folds para la validación cruzada
 num_folds = 5
 
-# Genera los índices de validación cruzada
-crossValidationIndices = crossvalidation(targets_train, num_folds)
-println("crossValidationIndices", crossValidationIndices)
+# # Genera los índices de validación cruzada
+# crossValidationIndices = crossvalidation(targets_train, num_folds)
+
+# # Guarda los índices en un archivo
+# writedlm("crossValidationIndices.csv", crossValidationIndices, ',')
+
+# Cargar los índices desde el archivo
+crossValidationIndices = readdlm("crossValidationIndices.csv", ',', Int64)[:]
+
+println("crossValidationIndices: ", crossValidationIndices)
+println("Nº de índices: ", size(crossValidationIndices)) # Debería ser igual al número de instancias
+
 
 # Aplica modelCrossValidation en la GPU
-resultados = gpu(modelCrossValidation)(:DecisionTreeClassifier, modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
+resultados = gpu(modelCrossValidation)(:KNeighborsClassifier, modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
 println(resultados)
