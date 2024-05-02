@@ -24,6 +24,7 @@ CONTINUOUS = [2, 3 , 4, 8, 11, 13]
 
 TARGETS = 17
 # Lista para almacenar todas las características transformadas
+inputs_train = []
 targets_train = []
 
 # Caracteristicas BINARY y CATEGORICAL
@@ -35,7 +36,7 @@ for num_col in vcat(BINARY, CATEGORICAL)
 
     # println(encoded_matrix)
     # Agregar características binarias y categóricas codificadas
-    push!(targets_train, encoded_matrix)
+    push!(inputs_train, encoded_matrix)
 end
 
 # Normalizar datos para las características INTEGER y CONTINUOUS
@@ -46,11 +47,14 @@ for num_col in vcat(INTEGER, CONTINUOUS)
 
     # println(feature_numeric)
     # Agregar características enteras y continuas codificadas
-    push!(targets_train, feature_numeric)
+    push!(inputs_train, feature_numeric)
 end
 
+# inputs format
+inputs_train = hcat(inputs_train)
+
 # targets operations
-inputs_train = [row[TARGETS] for row in eachrow(data)]
+targets_train = [row[TARGETS] for row in eachrow(data)]
 
 #07_data_parsing
 using Random
