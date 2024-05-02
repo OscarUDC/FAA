@@ -51,7 +51,7 @@ for num_col in vcat(INTEGER, CONTINUOUS)
 end
 
 # inputs format
-inputs_train = hcat(inputs_train)
+inputs_train = hcat(inputs_train...)
 
 # targets operations
 targets_train = [row[TARGETS] for row in eachrow(data)]
