@@ -21,8 +21,10 @@ CATEGORICAL = [9, 15, 16]
 INTEGER = [7, 14]
 CONTINUOUS = [2, 3 , 4, 8, 11, 13]
 
+
+TARGETS = 17
 # Lista para almacenar todas las características transformadas
-all_features = []
+targets_train = []
 
 # Caracteristicas BINARY y CATEGORICAL
 for num_col in vcat(BINARY, CATEGORICAL)
@@ -33,7 +35,7 @@ for num_col in vcat(BINARY, CATEGORICAL)
 
     # println(encoded_matrix)
     # Agregar características binarias y categóricas codificadas
-    push!(all_features, encoded_matrix)
+    push!(targets_train, encoded_matrix)
 end
 
 # Normalizar datos para las características INTEGER y CONTINUOUS
@@ -44,55 +46,26 @@ for num_col in vcat(INTEGER, CONTINUOUS)
 
     # println(feature_numeric)
     # Agregar características enteras y continuas codificadas
-    push!(all_features, feature_numeric)
+    push!(targets_train, feature_numeric)
 end
 
-#! println("Caracteristicas + Targets", all_features)
+# targets operations
+inputs_train = [row[TARGETS] for row in eachrow(data)]
 
 #07_data_parsing
 using Random
 
-# Definir la proporción para los conjuntos de entrenamiento, validación y prueba
-P_train = 0.7
-P_val = 0.2
-P_test = 0.1
-
-# Convertir la lista de características en una matriz
-all_features_matrix = hcat(all_features...) #! El problema está que al convertir a matriz las columnas categoricas se hacen varias columnas en vez de que sean una sola
-#! println("Matriz", all_features_matrix)
-
-# Obtener el tamaño total del conjunto de datos
-N_total = size(data, 1)
-
-# Dividir los datos en conjuntos de entrenamiento, validación y prueba
-train_indices, val_indices, test_indices = holdOut(N_total, P_val, P_test)
-
-# Separar las características para cada conjunto
-data_train = all_features_matrix[train_indices, :]
-data_val = all_features_matrix[val_indices, :]
-data_test = all_features_matrix[test_indices, :]
-
-# Imprimir los tamaños de los conjuntos de datos
-println("Tamaño del conjunto de entrenamiento: ", size(data_train))
-println("Tamaño del conjunto de validación: ", size(data_val))
-println("Tamaño del conjunto de prueba: ", size(data_test))
-
-
 #09_cross_validation
-# Importamos CUDA para ejecutar el programa en la GPU
-# using Pkg
-# Pkg.add("CUDA")
-# Pkg.add("cuDNN")
 using CUDA
 
 # Entrenamiento
 # Obtener los objetivos del conjunto de entrenamiento
-targets_train = data_train[:, 8] # Los targets están en la posicion 8 de la lista porque son los octavos en hacer el OneHotEncoding
-inputs_train = data_train[:, [1:7; 9:end]]
+# Los targets están en la posicion 8 de la lista porque son los octavos en hacer el OneHotEncoding
 
-# Imprimir los objetivos del conjunto de entrenamiento
-println("Objetivos del conjunto de entrenamiento: ", targets_train)
-println("Objetivos del conjunto de entrenamiento: ", inputs_train)
+# # Imprimir los objetivos del conjunto de entrenamiento
+# println("Tipo de targets_train", typeof(targets_train))
+# println("Objetivos del conjunto de entrenamiento: ", targets_train)
+# println("Caracteristicas del conjunto de entrenamiento: ", inputs_train)
 
 
 # Define los hiperparámetros del modelo (ajústalos según tus necesidades)
