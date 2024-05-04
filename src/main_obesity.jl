@@ -89,32 +89,32 @@ crossValidationIndices = readdlm("crossValidationIndices.csv", ',', Int64)[:]
 # resultados = gpu(modelCrossValidation)(:KNeighborsClassifier, modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
 # println(resultados)
 
-depths = [6, 7, 5, 8, 9, 10, 12, 15]
-for depth in depths
-    modelHyperparameters = Dict(
-        "max_depth" => depth
-    )
-    testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1 = gpu(modelCrossValidation)(:DecisionTreeClassifier,
-    modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
-
-    println("depth de esta ronda: \n", depth, "\n\n\n")
-    println("testAccuracy: \n", testAccuracy, "\n\n")
-    println("testErrorRate: \n", testErrorRate, "\n\n")
-    println("testRecall: \n", testRecall, "\n\n")
-    println("testSpecificity: \n", testSpecificity, "\n\n")
-    println("testPrecision: \n", testPrecision, "\n\n")
-    println("testNPV: \n", testNPV, "\n\n")
-    println("testF1: \n", testF1, "\n\n")
-end
-
-
-allNeigbours = [2, 3, 4, 5, 6, 7, 8, 9]
-
-# for neighbours in allNeigbours
+# depths = [6, 7, 5, 8, 9, 10, 12, 15]
+# for depth in depths
 #     modelHyperparameters = Dict(
-#         "n_neighbors" => neighbours,  # Ejemplo de topología de red neuronal
+#         "max_depth" => depth
 #     )
-#     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1 = gpu(modelCrossValidation)(:ANN,
+#     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1 = modelCrossValidation(:DecisionTreeClassifier,
+#     modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
+
+#     println("depth de esta ronda: \n", depth, "\n\n\n")
+#     println("testAccuracy: \n", testAccuracy, "\n\n")
+#     println("testErrorRate: \n", testErrorRate, "\n\n")
+#     println("testRecall: \n", testRecall, "\n\n")
+#     println("testSpecificity: \n", testSpecificity, "\n\n")
+#     println("testPrecision: \n", testPrecision, "\n\n")
+#     println("testNPV: \n", testNPV, "\n\n")
+#     println("testF1: \n", testF1, "\n\n")
+# end
+
+
+# allNeigbors = [2, 3, 4, 5, 6, 7]
+
+# for neighbors in allNeigbors
+#     modelHyperparameters = Dict(
+#         "n_neighbors" => neighbors,  # Ejemplo de topología de red neuronal
+#     )
+#     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1 = gpu(modelCrossValidation)(:KNeighborsClassifier,
 #     modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
 
 #     println("neighbours de esta ronda: \n", neighbours, "\n")
@@ -127,20 +127,42 @@ allNeigbours = [2, 3, 4, 5, 6, 7, 8, 9]
 #     println("testF1: \n", testF1, "\n\n\n")
 # end
 
+kernels = ["linear", "poly", "rbf", "sigmoid", "linear", "poly"]
 
-topologies = [[10, 15, 4, 6], [15, 3, 7, 5], [13, 8, 9, 11], [5, 7, 14], [8, 10, 4], [10, 6, 11, 5], [6, 14, 4]]
+parameters = [[0.5], [2, "auto", 1.0, 0.0], ["auto", 1.5], ["scale", 1.25, 3], [0.75], [3, "scale", 1.75, 1.0]]
 
-for topology in topologies
-    modelHyperparameters = Dict(
-        "topology" => topology,
-        "learningRate" => 0.01,
-        "maxEpochs" => 1000,
-        "numExecutions" => 7,
-    )
-    testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1 = gpu(modelCrossValidation)(:ANN,
+for pos in eachindex(kernels)
+    if kernels[pos] == "linear"
+        modelHyperparameters = Dict(
+        "kernel" => kernels[pos],
+        "C" => parameters[pos][1],
+        )
+    elseif kernels[pos] == "poly"
+        modelHyperparameters = Dict(
+        "kernel" => kernels[pos],
+        "degree" => parameters[pos][1],
+        "gamma" => parameters[pos][2],
+        "C" => parameters[pos][3],
+        "coef0" => parameters[pos][4],
+        )
+    elseif kernels[pos] == "rbf"
+        modelHyperparameters = Dict(
+        "kernel" => kernels[pos],
+        "gamma" => parameters[pos][1],
+        "C" => parameters[pos][2],
+        )
+    elseif kernels[pos] == "sigmoid"
+        modelHyperparameters = Dict(
+        "kernel" => kernels[pos],
+        "gamma" => parameters[pos][1],
+        "C" => parameters[pos][2],
+        "coef0" => parameters[pos][3]
+        )
+    end
+    testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1 = gpu(modelCrossValidation)(:SVC,
     modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
 
-    println("topology de esta ronda: \n", topology, "\n\n\n")
+    println("Datos de esta ronda: \n", modelHyperparameters, "\n")
     println("testAccuracy: \n", testAccuracy, "\n\n")
     println("testErrorRate: \n", testErrorRate, "\n\n")
     println("testRecall: \n", testRecall, "\n\n")
@@ -149,3 +171,34 @@ for topology in topologies
     println("testNPV: \n", testNPV, "\n\n")
     println("testF1: \n", testF1, "\n\n\n")
 end
+
+# if(modelHyperparameters["kernel"] == "linear")
+#     model = SVC(kernel=modelHyperparameters["kernel"], C=modelHyperparameters["C"]);
+# elseif(modelHyperparameters["kernel"] == "poly")
+#     model = SVC(kernel=modelHyperparameters["kernel"], degree=modelHyperparameters["degree"], gamma=modelHyperparameters["gamma"], C=modelHyperparameters["C"], coef0=modelHyperparameters["coef0"]);
+# elseif(modelHyperparameters["kernel"] == "rbf")
+#     model = SVC(kernel=modelHyperparameters["kernel"], gamma=modelHyperparameters["gamma"], C=modelHyperparameters["C"]);
+# elseif(modelHyperparameters["kernel"] == "sigmoid")
+#     model = SVC(kernel=modelHyperparameters["kernel"], gamma=modelHyperparameters["gamma"], C=modelHyperparameters["C"], coef0=modelHyperparameters["coef0"]);
+
+# topologies = [[10, 15], [4, 6], [15], [5, 13], [8, 9], [11], [5], [7, 14]]
+
+# for topology in topologies
+#     modelHyperparameters = Dict(
+#         "topology" => topology,
+#         "learningRate" => 0.01,
+#         "maxEpochs" => 1000,
+#         "numExecutions" => 7,
+#     )
+#     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1 = modelCrossValidation(:ANN,
+#     modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
+
+#     println("topology de esta ronda: \n", topology, "\n\n\n")
+#     println("testAccuracy: \n", testAccuracy, "\n\n")
+#     println("testErrorRate: \n", testErrorRate, "\n\n")
+#     println("testRecall: \n", testRecall, "\n\n")
+#     println("testSpecificity: \n", testSpecificity, "\n\n")
+#     println("testPrecision: \n", testPrecision, "\n\n")
+#     println("testNPV: \n", testNPV, "\n\n")
+#     println("testF1: \n", testF1, "\n\n\n")
+# end
