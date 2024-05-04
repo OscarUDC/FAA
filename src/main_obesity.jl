@@ -108,16 +108,16 @@ crossValidationIndices = readdlm("crossValidationIndices.csv", ',', Int64)[:]
 # end
 
 
-# allNeigbors = [2, 3, 4, 5, 6, 7]
+# allNeighbors = [1, 2, 3, 4, 5, 6, 7, 15, 50]
 
-# for neighbors in allNeigbors
+# for neighbors in allNeighbors
 #     modelHyperparameters = Dict(
 #         "n_neighbors" => neighbors,  # Ejemplo de topología de red neuronal
 #     )
 #     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1 = gpu(modelCrossValidation)(:KNeighborsClassifier,
 #     modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
 
-#     println("neighbours de esta ronda: \n", neighbours, "\n")
+#     println("neighbors de esta ronda: \n", neighbors, "\n")
 #     println("testAccuracy: \n", testAccuracy, "\n\n")
 #     println("testErrorRate: \n", testErrorRate, "\n\n")
 #     println("testRecall: \n", testRecall, "\n\n")
