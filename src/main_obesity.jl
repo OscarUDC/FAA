@@ -127,9 +127,9 @@ crossValidationIndices = readdlm("crossValidationIndices.csv", ',', Int64)[:]
 #     println("testF1: \n", testF1, "\n\n\n")
 # end
 
-kernels = ["linear", "poly", "rbf", "sigmoid", "linear", "poly"]
+kernels = ["rbf", "sigmoid"]
 
-parameters = [[0.5], [2, "auto", 1.0, 0.0], ["auto", 1.5], ["scale", 1.25, 3], [0.75], [3, "scale", 1.75, 1.0]]
+parameters = [["auto", 2], ["scale", 2, 2]]
 
 for pos in eachindex(kernels)
     if kernels[pos] == "linear"
