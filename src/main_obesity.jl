@@ -134,60 +134,32 @@ crossValidationIndices = readdlm("crossValidationIndices.csv", ',', Int64)[:]
 #     println("Matrices de confusión: ", confusion_matrices,"\n\n")
 # end
 
-# kernels = ["rbf", "sigmoid"]
+hyperparameters_list = [
+    Dict("C" => 0.5, "kernel" => "linear"),
+    Dict("C" => 1.0, "kernel" => "poly", "gamma" => "auto", "degree" => 2, "coef0" => 0.0),
+    Dict("C" => 1.5, "kernel" => "rbf", "gamma" => "auto"),
+    Dict("C" => 1.25, "kernel" => "sigmoid", "gamma" => "scale", "coef0" => 3),
+    Dict("C" => 0.75, "kernel" => "linear"),
+    Dict("C" => 1.75, "kernel" => "poly", "gamma" => "scale", "degree" => 3, "coef0" => 1.0),
+    Dict("C" => 2, "kernel" => "rbf", "gamma" => "auto"),
+    Dict("C" => 2, "kernel" => "sigmoid", "gamma" => "scale", "coef0" => 2)
+]
 
-# parameters = [["auto", 2], ["scale", 2, 2]]
 
-# for pos in eachindex(kernels)
-#     if kernels[pos] == "linear"
-#         modelHyperparameters = Dict(
-#         "kernel" => kernels[pos],
-#         "C" => parameters[pos][1],
-#         )
-#     elseif kernels[pos] == "poly"
-#         modelHyperparameters = Dict(
-#         "kernel" => kernels[pos],
-#         "degree" => parameters[pos][1],
-#         "gamma" => parameters[pos][2],
-#         "C" => parameters[pos][3],
-#         "coef0" => parameters[pos][4],
-#         )
-#     elseif kernels[pos] == "rbf"
-#         modelHyperparameters = Dict(
-#         "kernel" => kernels[pos],
-#         "gamma" => parameters[pos][1],
-#         "C" => parameters[pos][2],
-#         )
-#     elseif kernels[pos] == "sigmoid"
-#         modelHyperparameters = Dict(
-#         "kernel" => kernels[pos],
-#         "gamma" => parameters[pos][1],
-#         "C" => parameters[pos][2],
-#         "coef0" => parameters[pos][3]
-#         )
-#     end
-#     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1, confusion_matrices = gpu(modelCrossValidation)(:SVC,
-#     modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
+for (i, hyperparameters) in enumerate(hyperparameters_list)
+    testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1, confusion_matrices = gpu(modelCrossValidation)(:SVC,
+        hyperparameters, inputs_train, targets_train, crossValidationIndices)
 
-#     println("Datos de esta ronda: \n", modelHyperparameters, "\n")
-#     println("testAccuracy: \n", testAccuracy, "\n\n")
-#     println("testErrorRate: \n", testErrorRate, "\n\n")
-#     println("testRecall: \n", testRecall, "\n\n")
-#     println("testSpecificity: \n", testSpecificity, "\n\n")
-#     println("testPrecision: \n", testPrecision, "\n\n")
-#     println("testNPV: \n", testNPV, "\n\n")
-#     println("testF1: \n", testF1, "\n\n\n")
-#     println("Matrices de confusión: ", confusion_matrices,"\n\n")
-# end
-
-# if(modelHyperparameters["kernel"] == "linear")
-#     model = SVC(kernel=modelHyperparameters["kernel"], C=modelHyperparameters["C"]);
-# elseif(modelHyperparameters["kernel"] == "poly")
-#     model = SVC(kernel=modelHyperparameters["kernel"], degree=modelHyperparameters["degree"], gamma=modelHyperparameters["gamma"], C=modelHyperparameters["C"], coef0=modelHyperparameters["coef0"]);
-# elseif(modelHyperparameters["kernel"] == "rbf")
-#     model = SVC(kernel=modelHyperparameters["kernel"], gamma=modelHyperparameters["gamma"], C=modelHyperparameters["C"]);
-# elseif(modelHyperparameters["kernel"] == "sigmoid")
-#     model = SVC(kernel=modelHyperparameters["kernel"], gamma=modelHyperparameters["gamma"], C=modelHyperparameters["C"], coef0=modelHyperparameters["coef0"]);
+    println("Datos de esta ronda: \n", hyperparameters, "\n")
+    println("testAccuracy: \n", testAccuracy, "\n\n")
+    println("testErrorRate: \n", testErrorRate, "\n\n")
+    println("testRecall: \n", testRecall, "\n\n")
+    println("testSpecificity: \n", testSpecificity, "\n\n")
+    println("testPrecision: \n", testPrecision, "\n\n")
+    println("testNPV: \n", testNPV, "\n\n")
+    println("testF1: \n", testF1, "\n\n\n")
+    println("Matrices de confusión: ", confusion_matrices,"\n\n")
+end
 
 # topologies = [[10, 15], [4, 6], [15], [5, 13], [8, 9], [11], [5], [7, 14]]
 
