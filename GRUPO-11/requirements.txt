@@ -1,0 +1,8 @@
+pandas
+pandas-profiling
+seaborn
+matplotlib
+plotly
+dash
+hvplot
+ipywidgets
