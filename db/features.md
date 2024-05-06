@@ -1,6 +1,6 @@
 | Variable Name                | Role    | Type       |
 |------------------------------|---------|------------|
-| Gender                       | Feature | Categorical|
+| Gender                       | Feature | Binary     |
 | Age                          | Feature | Continuous |
 | Height                       | Feature | Continuous |
 | Weight                       | Feature | Continuous |
