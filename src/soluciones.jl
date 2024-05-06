@@ -583,6 +583,9 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
     # Primero codificamos las salidas deseadas en caso de entrenar RR.NN.AA.
     targets = oneHotEncoding(targets, classes);
 
+    # Definimos el vector confusion_matrices fuera del bucle for
+    confusion_matrices = Array{Matrix{Int},1}(undef, numFolds);
+
     # Para cada fold, entrenamos
     for numFold in 1:numFolds
 
@@ -605,7 +608,7 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
         # Se entrena las veces que se haya indicado
         for numTraining in 1:numExecutions
 
-            if validationRatio>0
+            if validationRatio > 0
 
                 # Para el caso de entrenar una RNA con conjunto de validacion, hacemos una división adicional:
                 #  dividimos el conjunto de entrenamiento en entrenamiento+validacion
@@ -632,8 +635,8 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
             end;
 
             # Calculamos las metricas correspondientes con la funcion desarrollada en el ejercicio anterior
-            (testAccuracyEachRepetition[numTraining], testErrorRateEachRepetition[numTraining], testRecallEachRepetition[numTraining], testSpecificityEachRepetition[numTraining], testPrecisionEachRepetition[numTraining], testNPVEachRepetition[numTraining], testF1EachRepetition[numTraining], _) =
-                confusionMatrix(collect(ann(testInputs')'), testTargets);
+            (testAccuracyEachRepetition[numTraining], testErrorRateEachRepetition[numTraining], testRecallEachRepetition[numTraining], testSpecificityEachRepetition[numTraining], testPrecisionEachRepetition[numTraining], testNPVEachRepetition[numTraining], testF1EachRepetition[numTraining], confusion_matrices[numFold]) = 
+            confusionMatrix(collect(ann(testInputs')'), testTargets);
 
         end;
 
@@ -648,7 +651,7 @@ function ANNCrossValidation(topology::AbstractArray{<:Int,1},
 
     end; # for numFold in 1:numFolds
 
-    return (mean(testAccuracy), std(testAccuracy)), (mean(testErrorRate), std(testErrorRate)), (mean(testRecall), std(testRecall)), (mean(testSpecificity), std(testSpecificity)), (mean(testPrecision), std(testPrecision)), (mean(testNPV), std(testNPV)), (mean(testF1), std(testF1));
+    return (mean(testAccuracy), std(testAccuracy)), (mean(testErrorRate), std(testErrorRate)), (mean(testRecall), std(testRecall)), (mean(testSpecificity), std(testSpecificity)), (mean(testPrecision), std(testPrecision)), (mean(testNPV), std(testNPV)), (mean(testF1), std(testF1)), confusion_matrices;
 
 end;
 
@@ -710,6 +713,7 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, inp
     testPrecision   = Array{Float64,1}(undef, numFolds);
     testNPV         = Array{Float64,1}(undef, numFolds);
     testF1          = Array{Float64,1}(undef, numFolds);
+    confusion_matrices = Array{Matrix{Int},1}(undef, numFolds);
 
     targets = string.(targets);
 
@@ -753,12 +757,12 @@ function modelCrossValidation(modelType::Symbol, modelHyperparameters::Dict, inp
 
         # Calculamos las metricas y las almacenamos en las posiciones de este fold de cada vector
 
-        (testAccuracy[numFold], testErrorRate[numFold], testRecall[numFold], testSpecificity[numFold], testPrecision[numFold], testNPV[numFold], testF1[numFold], _) =
+        (testAccuracy[numFold], testErrorRate[numFold], testRecall[numFold], testSpecificity[numFold], testPrecision[numFold], testNPV[numFold], testF1[numFold], confusion_matrices[numFold]) = 
         confusionMatrix(testOutputs, testTargets);
 
     end; # for numFold in 1:numFolds
 
-    return (mean(testAccuracy), std(testAccuracy)), (mean(testErrorRate), std(testErrorRate)), (mean(testRecall), std(testRecall)), (mean(testSpecificity), std(testSpecificity)), (mean(testPrecision), std(testPrecision)), (mean(testNPV), std(testNPV)), (mean(testF1), std(testF1));
+    return (mean(testAccuracy), std(testAccuracy)), (mean(testErrorRate), std(testErrorRate)), (mean(testRecall), std(testRecall)), (mean(testSpecificity), std(testSpecificity)), (mean(testPrecision), std(testPrecision)), (mean(testNPV), std(testNPV)), (mean(testF1), std(testF1)), confusion_matrices
 
 end;
 

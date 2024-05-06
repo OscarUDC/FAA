@@ -18,15 +18,14 @@ include.([
 data = readdlm("db\\raw\\ObesityDataSet_raw_and_data_sinthetic.csv", ',', skipstart=1) # Evita que se lea la primera línea, donde aparece el nombre de la columna
 
 #01_oneHotEncoding
-# El Genero, Columna 1, aunque ponga en el DB que la variable es categorica, no hay representaciones de más categorias que HOMBRE O MUJER así que la consideraremos binaria (Si existe el genero diamante que llamen al pentagono)
 BINARY = [1, 5, 6, 10, 12]
 CATEGORICAL = [9, 15, 16]
 
 INTEGER = [7, 14]
 CONTINUOUS = [2, 3 , 4, 8, 11, 13]
 
-
 TARGETS = 17
+
 # Lista para almacenar todas las características transformadas
 inputs_train = []
 targets_train = []
@@ -55,16 +54,18 @@ for num_col in vcat(INTEGER, CONTINUOUS)
 end
 
 
+#____________________________________________________________________________________________________________________________________________________________________________
 
 
-
-# inputs format
+# Inputs format (Matrix)
 inputs_train = hcat(inputs_train...)
 # println("Matriz",DataFrame(inputs_train, :auto))
 # println("Tamaño matriz", size(inputs_train))
 
-# targets operations
+# Targets operations
 targets_train = [row[TARGETS] for row in eachrow(data)]
+
+#____________________________________________________________________________________________________________________________________________________________________________
 
 # Define el número de folds para la validación cruzada
 num_folds = 5
@@ -81,6 +82,8 @@ crossValidationIndices = readdlm("crossValidationIndices.csv", ',', Int64)[:]
 # println("crossValidationIndices: ", crossValidationIndices)
 # println("Nº de índices: ", size(crossValidationIndices)) # Debería ser igual al número de instancias
 
+#____________________________________________________________________________________________________________________________________________________________________________
+
 # modelHyperparameters = Dict(
 #     "n_neighbors" => 2,  # Ejemplo de topología de red neuronal
 # )
@@ -89,12 +92,14 @@ crossValidationIndices = readdlm("crossValidationIndices.csv", ',', Int64)[:]
 # resultados = gpu(modelCrossValidation)(:KNeighborsClassifier, modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
 # println(resultados)
 
+#____________________________________________________________________________________________________________________________________________________________________________
+
 # depths = [6, 7, 5, 8, 9, 10, 12, 15]
 # for depth in depths
 #     modelHyperparameters = Dict(
 #         "max_depth" => depth
 #     )
-#     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1 = modelCrossValidation(:DecisionTreeClassifier,
+#     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1, confusion_matrices = modelCrossValidation(:DecisionTreeClassifier,
 #     modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
 
 #     println("depth de esta ronda: \n", depth, "\n\n\n")
@@ -105,6 +110,7 @@ crossValidationIndices = readdlm("crossValidationIndices.csv", ',', Int64)[:]
 #     println("testPrecision: \n", testPrecision, "\n\n")
 #     println("testNPV: \n", testNPV, "\n\n")
 #     println("testF1: \n", testF1, "\n\n")
+#     println("Matrices de confusión: ", confusion_matrices,"\n\n")
 # end
 
 
@@ -114,7 +120,7 @@ crossValidationIndices = readdlm("crossValidationIndices.csv", ',', Int64)[:]
 #     modelHyperparameters = Dict(
 #         "n_neighbors" => neighbors,  # Ejemplo de topología de red neuronal
 #     )
-#     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1 = gpu(modelCrossValidation)(:KNeighborsClassifier,
+#     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1, confusion_matrices = gpu(modelCrossValidation)(:KNeighborsClassifier,
 #     modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
 
 #     println("neighbors de esta ronda: \n", neighbors, "\n")
@@ -125,52 +131,54 @@ crossValidationIndices = readdlm("crossValidationIndices.csv", ',', Int64)[:]
 #     println("testPrecision: \n", testPrecision, "\n\n")
 #     println("testNPV: \n", testNPV, "\n\n")
 #     println("testF1: \n", testF1, "\n\n\n")
+#     println("Matrices de confusión: ", confusion_matrices,"\n\n")
 # end
 
-kernels = ["rbf", "sigmoid"]
+# kernels = ["rbf", "sigmoid"]
 
-parameters = [["auto", 2], ["scale", 2, 2]]
+# parameters = [["auto", 2], ["scale", 2, 2]]
 
-for pos in eachindex(kernels)
-    if kernels[pos] == "linear"
-        modelHyperparameters = Dict(
-        "kernel" => kernels[pos],
-        "C" => parameters[pos][1],
-        )
-    elseif kernels[pos] == "poly"
-        modelHyperparameters = Dict(
-        "kernel" => kernels[pos],
-        "degree" => parameters[pos][1],
-        "gamma" => parameters[pos][2],
-        "C" => parameters[pos][3],
-        "coef0" => parameters[pos][4],
-        )
-    elseif kernels[pos] == "rbf"
-        modelHyperparameters = Dict(
-        "kernel" => kernels[pos],
-        "gamma" => parameters[pos][1],
-        "C" => parameters[pos][2],
-        )
-    elseif kernels[pos] == "sigmoid"
-        modelHyperparameters = Dict(
-        "kernel" => kernels[pos],
-        "gamma" => parameters[pos][1],
-        "C" => parameters[pos][2],
-        "coef0" => parameters[pos][3]
-        )
-    end
-    testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1 = gpu(modelCrossValidation)(:SVC,
-    modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
+# for pos in eachindex(kernels)
+#     if kernels[pos] == "linear"
+#         modelHyperparameters = Dict(
+#         "kernel" => kernels[pos],
+#         "C" => parameters[pos][1],
+#         )
+#     elseif kernels[pos] == "poly"
+#         modelHyperparameters = Dict(
+#         "kernel" => kernels[pos],
+#         "degree" => parameters[pos][1],
+#         "gamma" => parameters[pos][2],
+#         "C" => parameters[pos][3],
+#         "coef0" => parameters[pos][4],
+#         )
+#     elseif kernels[pos] == "rbf"
+#         modelHyperparameters = Dict(
+#         "kernel" => kernels[pos],
+#         "gamma" => parameters[pos][1],
+#         "C" => parameters[pos][2],
+#         )
+#     elseif kernels[pos] == "sigmoid"
+#         modelHyperparameters = Dict(
+#         "kernel" => kernels[pos],
+#         "gamma" => parameters[pos][1],
+#         "C" => parameters[pos][2],
+#         "coef0" => parameters[pos][3]
+#         )
+#     end
+#     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1, confusion_matrices = gpu(modelCrossValidation)(:SVC,
+#     modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
 
-    println("Datos de esta ronda: \n", modelHyperparameters, "\n")
-    println("testAccuracy: \n", testAccuracy, "\n\n")
-    println("testErrorRate: \n", testErrorRate, "\n\n")
-    println("testRecall: \n", testRecall, "\n\n")
-    println("testSpecificity: \n", testSpecificity, "\n\n")
-    println("testPrecision: \n", testPrecision, "\n\n")
-    println("testNPV: \n", testNPV, "\n\n")
-    println("testF1: \n", testF1, "\n\n\n")
-end
+#     println("Datos de esta ronda: \n", modelHyperparameters, "\n")
+#     println("testAccuracy: \n", testAccuracy, "\n\n")
+#     println("testErrorRate: \n", testErrorRate, "\n\n")
+#     println("testRecall: \n", testRecall, "\n\n")
+#     println("testSpecificity: \n", testSpecificity, "\n\n")
+#     println("testPrecision: \n", testPrecision, "\n\n")
+#     println("testNPV: \n", testNPV, "\n\n")
+#     println("testF1: \n", testF1, "\n\n\n")
+#     println("Matrices de confusión: ", confusion_matrices,"\n\n")
+# end
 
 # if(modelHyperparameters["kernel"] == "linear")
 #     model = SVC(kernel=modelHyperparameters["kernel"], C=modelHyperparameters["C"]);
@@ -190,7 +198,7 @@ end
 #         "maxEpochs" => 1000,
 #         "numExecutions" => 7,
 #     )
-#     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1 = modelCrossValidation(:ANN,
+#     testAccuracy, testErrorRate, testRecall, testSpecificity, testPrecision, testNPV, testF1, confusion_matrices = modelCrossValidation(:ANN,
 #     modelHyperparameters, inputs_train, targets_train, crossValidationIndices)
 
 #     println("topology de esta ronda: \n", topology, "\n\n\n")
@@ -201,4 +209,5 @@ end
 #     println("testPrecision: \n", testPrecision, "\n\n")
 #     println("testNPV: \n", testNPV, "\n\n")
 #     println("testF1: \n", testF1, "\n\n\n")
+#     println("Matrices de confusión: ", confusion_matrices,"\n\n")
 # end
