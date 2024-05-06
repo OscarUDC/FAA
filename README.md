@@ -70,8 +70,8 @@ graph TD
 | `config/` | files for the enviroment configuration |
 | `db/` | databases of train, test and validation |
 | `docs/` | documentation files |
-| `release_p1/` | final code p1 for delivery |
-| `release_p2/` | final code p2 for delivery |
+| `src_p1/` | final code p1 for delivery |
+| `src_p2/` | final code p2 for delivery |
 
 # External Libraries 👇
 [Julia](https://github.com/JuliaLang/julia)
